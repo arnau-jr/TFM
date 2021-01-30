@@ -1,0 +1,8 @@
+27/01/21: Started program to convert Z matrix to xyz coordinates, finished it.
+	Tested with bipy molecule from MoMo and build a Z matrix for the DPNA and 
+	tested it, appears to work correctly.
+28/01/21: Started and finished program to convert xyz to Z matrix and transfered
+	functionaliy to a module. The conversor appears to work correctly (tested with
+	DPNA).
+29/01/21: Fixed openbabel format issue, now its recognized. Tried with a couple of extra
+	shapes to test the back and forth conversion. The covalent radius needs to be fixed.
