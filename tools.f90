@@ -4,6 +4,7 @@
 
             contains
 
+
             function unit_cross(u1,u2) result(u3)
                   implicit none
                   real :: u1(3),u2(3)
@@ -119,19 +120,17 @@
                   implicit none
                   integer :: N
                   real :: dmat(N,N)
-                  integer,allocatable :: bond_graph(:,:)
+                  logical,allocatable :: bond_graph(:,:)
                   real,parameter :: thresh = 2.0 
                   integer :: counter,i,j
                   
                   allocate(bond_graph(N,N))
-                  bond_graph = 0
-
+                  bond_graph = .false.
                   do i = 1,N
-                        counter = 0
-                        do j = 1,N
-                              if(dmat(i,j) < thresh .and. i/=j) then
-                                    counter = counter + 1
-                                    bond_graph(i,counter) = j
+                        do j = i+1,N
+                              if(dmat(i,j) < thresh) then
+                                    bond_graph(i,j) = .true.
+                                    bond_graph(j,i) = .true.
                               endif
                         enddo
                   enddo
@@ -165,7 +164,8 @@
 
             subroutine get_angles(N,xyz,bond_graph,angle_pairsbis,angle_valsbis)
                   implicit none
-                  integer :: N,bond_graph(N,N)
+                  integer :: N
+                  logical :: bond_graph(N,N)
                   real :: xyz(3,N)
                   integer,allocatable :: angle_pairs(:,:),angle_pairsbis(:,:)
                   real,allocatable :: angle_vals(:),angle_valsbis(:)
@@ -177,22 +177,18 @@
                   Nangles = 0
                   do i = 1,N
                         a = i
-                        do j = 1,N
-                              if(bond_graph(a,j)==0) then
-                                    exit
-                              else
-                                    b = bond_graph(a,j)
+                        do j = i+1,N
+                              if(bond_graph(a,j).eqv..true.) then
+                                    b = j
+                                    do k = j+1,N
+                                          if(bond_graph(b,k).eqv..true.) then
+                                                c = k
+                                                Nangles = Nangles + 1
+                                                angle_pairs(Nangles,:) = (/a,b,c/)
+                                                angle_vals(Nangles) = get_angle(xyz(:,a),xyz(:,b),xyz(:,c))
+                                          endif
+                                    enddo
                               endif
-                              do k = 1,N
-                                    if(bond_graph(b,k)==0) then
-                                          exit
-                                    elseif(a/=bond_graph(b,k)) then
-                                          c = bond_graph(b,k)
-                                          Nangles = Nangles + 1
-                                          angle_pairs(Nangles,:) = (/a,b,c/)
-                                          angle_vals(Nangles) = get_angle(xyz(:,a),xyz(:,b),xyz(:,c))
-                                    endif
-                              enddo
                         enddo
                   enddo
                   allocate(angle_pairsbis(Nangles,3),angle_valsbis(Nangles))
@@ -202,7 +198,8 @@
 
             subroutine get_torsions(N,xyz,bond_graph,torsion_pairsbis,torsion_valsbis)
                   implicit none
-                  integer :: N,bond_graph(N,N)
+                  integer :: N
+                  logical :: bond_graph(N,N)
                   real :: xyz(3,N)
                   integer,allocatable :: torsion_pairs(:,:),torsion_pairsbis(:,:)
                   real,allocatable :: torsion_vals(:),torsion_valsbis(:)
@@ -215,28 +212,32 @@
                   do i = 1,N
                         a = i
                         do j = 1,N
-                              if(bond_graph(a,j)==0) then
-                                    exit
-                              else
-                                    b = bond_graph(a,j)
-                              endif
-                              do k = 1,N
-                                    if(bond_graph(b,k)==0) then
-                                          exit
-                                    elseif(a/=bond_graph(b,k)) then
-                                          c = bond_graph(b,k)
-                                          do l=1,N
-                                                if(bond_graph(c,l)==0) then
-                                                      exit
-                                                elseif(a/=bond_graph(c,l).and.b/=bond_graph(c,l)) then
-                                                      d = bond_graph(c,l)
-                                                      Ntorsions = Ntorsions + 1
-                                                      torsion_pairs(Ntorsions,:) = (/a,b,c,d/)
-                                                      torsion_vals(Ntorsions) = get_torsion(xyz(:,a),xyz(:,b),xyz(:,c),xyz(:,d))
-                                                endif
-                                          enddo
+                              if(bond_graph(a,j).eqv..true.) then
+                                    if(a<j) then
+                                          cycle
                                     endif
-                              enddo
+                                    b = j
+                                    do k = 1,N
+                                          if(bond_graph(b,k).eqv..true.) then
+                                                if(a==k) then
+                                                      cycle
+                                                endif
+                                                c = k
+                                                do l=1,N
+                                                      if(bond_graph(c,l).eqv..true.) then
+                                                            if(a == l .or. b == l) then
+                                                                  cycle
+                                                            endif
+                                                            d = l
+                                                            Ntorsions = Ntorsions + 1
+                                                            torsion_pairs(Ntorsions,:) = (/a,b,c,d/)
+                                                            torsion_vals(Ntorsions) &
+                                                      = get_torsion(xyz(:,a),xyz(:,b),xyz(:,c),xyz(:,d))
+                                                      endif
+                                                enddo
+                                          endif
+                                    enddo
+                              endif
                         enddo
                   enddo
                   allocate(torsion_pairsbis(Ntorsions,4),torsion_valsbis(Ntorsions))
@@ -250,7 +251,7 @@
                   character :: S(N)*2
                   integer :: angle_pairs(Nangle,3),torsion_pairs(Ntorsion,4)
                   real :: dmat(N,N),angle_vals(Nangle),torsion_vals(Ntorsion)
-                  integer :: bond_graph(N,N)
+                  logical :: bond_graph(N,N)
 
                   integer :: Batom,Aatom,Tatom
                   real :: B,A,T
@@ -269,28 +270,45 @@
                   write(port,"(A)")S(1)
 
 
-                  Batom = bond_graph(2,1)
+                  Batom = 1
                   B = dmat(2,Batom)
                   write(port,"(A,1X,I2,1X,F4.2)")S(2),Batom,B
 
 
-                  Batom = bond_graph(3,1)
+                  do j=1,3
+                        if(bond_graph(3,j).eqv..true.) then
+                              Batom = j
+                              exit
+                        endif
+                  enddo
                   B = dmat(3,Batom)
                   do i=1,Nangle
-                        if(3==angle_pairs(i,1) .and. angle_pairs(i,3)<3) then
+                        if(angle_pairs(i,1)==3 .and. angle_pairs(i,3)<3) then
                               Aatom = angle_pairs(i,3)
+                              A = angle_vals(i)
+                        elseif(angle_pairs(i,3)==3 .and. angle_pairs(i,1)<3) then
+                              Aatom = angle_pairs(i,1)
                               A = angle_vals(i)
                         endif
                   enddo
                   write(port,"(A,1X,I2,1X,F4.2,1X,I2,1X,F6.1)")S(3),Batom,B,Aatom,A
 
                   do i=4,N
-                        Batom = bond_graph(i,1)
+                        do j=1,i
+                              if(bond_graph(i,j).eqv..true.) then
+                                    Batom = j
+                                    exit
+                              endif
+                        enddo
                         B = dmat(i,Batom)
 
                         do j=1,Nangle
-                              if(i==angle_pairs(j,1) .and. angle_pairs(j,3)<i) then
+                              if(angle_pairs(j,1)==i .and. angle_pairs(j,3)<i) then
                                     Aatom = angle_pairs(j,3)
+                                    A = angle_vals(j)
+                                    exit
+                              elseif(angle_pairs(j,3)==i .and. angle_pairs(j,1)<i) then
+                                    Aatom = angle_pairs(j,1)
                                     A = angle_vals(j)
                                     exit
                               endif

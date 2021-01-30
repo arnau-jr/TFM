@@ -4,8 +4,9 @@
       integer :: N,Nangle,Ntorsion
       character,allocatable :: S(:)*2
       real,allocatable :: xyz(:,:),dmat(:,:)
-      integer,allocatable :: bond_graph(:,:)
-      real,allocatable :: angles(:,:),torsions(:,:)
+      logical,allocatable :: bond_graph(:,:)
+      integer,allocatable :: angle_pairs(:,:),torsion_pairs(:,:)
+      real,allocatable :: angle_vals(:),torsion_vals(:)
       integer :: i
       
       character :: input_filename*90,output_filename*90
@@ -32,13 +33,22 @@
       dmat =  get_dist_matrix(N,xyz)
       bond_graph = get_bond_graph(N,dmat)
 
-      angles = get_angles(N,xyz,bond_graph)
-      Nangle = size(angles,1)
+      call get_angles(N,xyz,bond_graph,angle_pairs,angle_vals)
+      Nangle = size(angle_vals)
+      print*,Nangle
+      do i=1,Nangle
+            print*,angle_pairs(i,:)
+      enddo
 
-      torsions = get_torsions(N,xyz,bond_graph)
-      Ntorsion = size(torsions,1)
+      call get_torsions(N,xyz,bond_graph,torsion_pairs,torsion_vals)
+      Ntorsion = size(torsion_vals)
 
-      call save_zmat(2,N,Nangle,Ntorsion,S,dmat,bond_graph,angles,torsions)
+      print*,Ntorsion
+      do i=1,Ntorsion
+            print*,torsion_pairs(i,:)
+      enddo
+
+      call save_zmat(2,N,Nangle,Ntorsion,S,dmat,bond_graph,angle_pairs,angle_vals,torsion_pairs,torsion_vals)
 
       end
 
