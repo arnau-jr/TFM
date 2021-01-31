@@ -31,13 +31,14 @@
       call get_xyz(1,N,S,xyz)
 
       dmat =  get_dist_matrix(N,xyz)
-      bond_graph = get_bond_graph(N,dmat)
+      bond_graph = get_bond_graph(N,S,dmat)
+      
 
       call get_angles(N,xyz,bond_graph,angle_pairs,angle_vals)
       Nangle = size(angle_vals)
       print*,Nangle
       do i=1,Nangle
-            print*,angle_pairs(i,:)
+            print*,angle_pairs(i,:),angle_vals(i)
       enddo
 
       call get_torsions(N,xyz,bond_graph,torsion_pairs,torsion_vals)
@@ -45,7 +46,7 @@
 
       print*,Ntorsion
       do i=1,Ntorsion
-            print*,torsion_pairs(i,:)
+            print*,torsion_pairs(i,:),torsion_vals(i)
       enddo
 
       call save_zmat(2,N,Nangle,Ntorsion,S,dmat,bond_graph,angle_pairs,angle_vals,torsion_pairs,torsion_vals)

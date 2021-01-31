@@ -1,9 +1,30 @@
       module tools
             implicit none
             real,parameter :: pi=4.*atan(1.) 
+            real,parameter :: cov(10) = (/0.37,0.,0.,0.,0.,0.77,0.75,0.73,0.,0./)
 
             contains
 
+            subroutine parse_atomic_symbol_to_num(N,S,Z)
+                  implicit none
+                  integer :: N
+                  character :: S(N)*2
+                  integer :: Z(N),i
+
+                  do i=1,N
+                        if(S(i)=="H") then
+                              Z(i) = 1
+                        elseif(S(i)=="C") then
+                              Z(i) = 6
+                        elseif(S(i)=="N") then
+                              Z(i) = 7
+                        elseif(S(i)=="O") then
+                              Z(i) = 8
+                        else
+                              write(*,*)"Parsing: atom not recognized"
+                        endif
+                  enddo
+            end
 
             function unit_cross(u1,u2) result(u3)
                   implicit none
@@ -116,19 +137,23 @@
                   enddo
             end function get_dist_matrix
 
-            function get_bond_graph(N,dmat) result(bond_graph)
+            function get_bond_graph(N,S,dmat) result(bond_graph)
                   implicit none
                   integer :: N
+                  character :: S(N)*2
                   real :: dmat(N,N)
                   logical,allocatable :: bond_graph(:,:)
-                  real,parameter :: thresh = 2.0 
+                  real,parameter :: thresh = 1.2
+                  integer :: Z(N)
                   integer :: counter,i,j
+
+                  call parse_atomic_symbol_to_num(N,S,Z)
                   
                   allocate(bond_graph(N,N))
                   bond_graph = .false.
                   do i = 1,N
                         do j = i+1,N
-                              if(dmat(i,j) < thresh) then
+                              if(dmat(i,j) < thresh*(cov(Z(i))+cov(Z(j)))) then
                                     bond_graph(i,j) = .true.
                                     bond_graph(j,i) = .true.
                               endif
@@ -136,20 +161,24 @@
                   enddo
             end function get_bond_graph
 
-            subroutine get_bonds(N,dmat,bond_pairsbis,bond_valsbis)
+            subroutine get_bonds(N,S,dmat,bond_pairsbis,bond_valsbis)
                   implicit none
                   integer :: N
+                  character :: S(N)*2
                   real :: dmat(N,N)
                   integer,allocatable :: bond_pairs(:,:),bond_pairsbis(:,:)
                   real,allocatable :: bond_vals(:),bond_valsbis(:)
-                  real,parameter :: thresh = 2.0 
+                  real,parameter :: thresh = 1.2
+                  integer :: Z(N)
                   integer :: Nbonds,i,j
+
+                  call parse_atomic_symbol_to_num(N,S,Z)
                   
                   allocate(bond_pairs(N*N,2),bond_vals(N*N))
                   Nbonds = 0
                   do i = 1,N
                         do j = i+1,N
-                              if(dmat(i,j) < thresh) then
+                              if(dmat(i,j) < thresh*(cov(Z(i))+cov(Z(j)))) then
                                     Nbonds = Nbonds + 1
                                     bond_pairs(Nbonds,:) = (/i,j/)
                                     bond_vals(Nbonds) = dmat(i,j)
@@ -177,10 +206,10 @@
                   Nangles = 0
                   do i = 1,N
                         a = i
-                        do j = i+1,N
+                        do j = 1,N
                               if(bond_graph(a,j).eqv..true.) then
                                     b = j
-                                    do k = j+1,N
+                                    do k = a+1,N
                                           if(bond_graph(b,k).eqv..true.) then
                                                 c = k
                                                 Nangles = Nangles + 1
@@ -213,19 +242,19 @@
                         a = i
                         do j = 1,N
                               if(bond_graph(a,j).eqv..true.) then
-                                    if(a<j) then
+                                    if(j>a) then
                                           cycle
                                     endif
                                     b = j
                                     do k = 1,N
                                           if(bond_graph(b,k).eqv..true.) then
-                                                if(a==k) then
+                                                if(k==a) then
                                                       cycle
                                                 endif
                                                 c = k
                                                 do l=1,N
                                                       if(bond_graph(c,l).eqv..true.) then
-                                                            if(a == l .or. b == l) then
+                                                            if(l == a .or. l == b) then
                                                                   cycle
                                                             endif
                                                             d = l
@@ -303,11 +332,13 @@
                         B = dmat(i,Batom)
 
                         do j=1,Nangle
-                              if(angle_pairs(j,1)==i .and. angle_pairs(j,3)<i) then
+                              if(angle_pairs(j,1)==i .and. angle_pairs(j,3)<i &
+                              .and. angle_pairs(j,2)<i) then
                                     Aatom = angle_pairs(j,3)
                                     A = angle_vals(j)
                                     exit
-                              elseif(angle_pairs(j,3)==i .and. angle_pairs(j,1)<i) then
+                              elseif(angle_pairs(j,3)==i .and. angle_pairs(j,1)<i &
+                                    .and. angle_pairs(j,2)<i) then
                                     Aatom = angle_pairs(j,1)
                                     A = angle_vals(j)
                                     exit
@@ -315,10 +346,13 @@
                         enddo
 
                         do j=1,Ntorsion
-                              if(i==torsion_pairs(j,1) .and. torsion_pairs(j,4)<i) then
+                              if(torsion_pairs(j,1)==i .and. torsion_pairs(j,4)<i) then
                                     Tatom = torsion_pairs(j,4)
                                     T = torsion_vals(j)
                                     exit
+                              elseif(torsion_pairs(j,4)==i .and. torsion_pairs(j,1)<i) then
+                                    Tatom = torsion_pairs(j,1)
+                                    T = torsion_vals(j)
                               endif
                         enddo
 
