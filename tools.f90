@@ -60,6 +60,14 @@
                   basis(:,1) = n
             end
 
+            function get_dist(c1,c2) result (d)
+                  implicit none
+                  real :: c1(3),c2(3)
+                  real :: d
+
+                  d = sqrt(sum((c1-c2)**2))
+            end function get_dist
+
             function get_angle(c1,c2,c3) result(A)
                   implicit none
                   real :: c1(3),c2(3),c3(3)
@@ -242,19 +250,23 @@
                         a = i
                         do j = 1,N
                               if(bond_graph(a,j).eqv..true.) then
-                                    if(j>a) then
-                                          cycle
-                                    endif
+                                    ! if(j>a) then
+                                    !       cycle
+                                    ! endif
                                     b = j
                                     do k = 1,N
                                           if(bond_graph(b,k).eqv..true.) then
+                                                ! if(k>=a) then
                                                 if(k==a) then
                                                       cycle
                                                 endif
                                                 c = k
                                                 do l=1,N
                                                       if(bond_graph(c,l).eqv..true.) then
-                                                            if(l == a .or. l == b) then
+                                                            ! if(l >= a .or. l == b) then
+                                                            !       cycle
+                                                            ! endif
+                                                            if(l >= a .or. l == b) then
                                                                   cycle
                                                             endif
                                                             d = l
