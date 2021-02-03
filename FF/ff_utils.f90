@@ -88,6 +88,7 @@
                   real :: r12(3)
 
                   H = 0.d0
+                  !TODO: TREAT DIAGONAL PROPERLY
                   do a=1,Natoms
                         do b=1,Natoms
                               do p=0,2
@@ -221,9 +222,110 @@
 
                         !For all torsions
                         do torsion=1,Ntorsions
-                              !If both a and b are involved: TODO
-                              if(any(angle_pairs(angle,:)==a) .or. any(angle_pairs(angle,:)==b)) then
 
+                              !If both a and b are extremes and a is the first one
+                              if(torsion_pairs(torsion,1)==a .and. torsion_pairs(torsion,4)==b) then
+                                    k = torsion_pairs(torsion,2)
+                                    l = torsion_pairs(torsion,3)
+
+                                    Vpp = comp_torsion_energy(get_torsion(disppi,xyz(:,k)&
+                                    ,xyz(:,l),disppj),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmi,xyz(:,k)&
+                                    ,xyz(:,l),dispmj),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(disppi,xyz(:,k)&
+                                    ,xyz(:,l),dispmj),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(dispmi,xyz(:,k)&
+                                    ,xyz(:,l),disppj),An(torsion),n(torsion),delta(torsion))
+                              !If both a and b are extremes and a is the last one
+                              elseif(torsion_pairs(torsion,4)==a .and. torsion_pairs(torsion,1)==b) then
+                                    k = torsion_pairs(torsion,2)
+                                    l = torsion_pairs(torsion,3)
+
+                                    Vpp = comp_torsion_energy(get_torsion(disppj,xyz(:,k)&
+                                    ,xyz(:,l),disppi),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmj,xyz(:,k)&
+                                    ,xyz(:,l),dispmi),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(dispmj,xyz(:,k)&
+                                    ,xyz(:,l),disppi),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(disppj,xyz(:,k)&
+                                    ,xyz(:,l),dispmi),An(torsion),n(torsion),delta(torsion))
+                              !If a is an extreme and b is a middle atom next to a
+                              elseif((torsion_pairs(torsion,1)==a .and. torsion_pairs(torsion,2)==b) .or.&
+                                    (torsion_pairs(torsion,4)==a .and. torsion_pairs(torsion,3)==b)) then
+
+                                    if(torsion_pairs(torsion,1)==a) then
+                                          k=torsion_pairs(torsion,3)
+                                          l=torsion_pairs(torsion,4)
+                                    elseif(torsion_pairs(torsion,4)==a) then
+                                          k=torsion_pairs(torsion,2)
+                                          l=torsion_pairs(torsion,1)
+                                    endif
+                                    Vpp = comp_torsion_energy(get_torsion(disppi,disppj,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmi,dispmj,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(disppi,dispmj,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(dispmi,disppj,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                              !If a is an extreme and b is a middle atom not next to a
+                              elseif((torsion_pairs(torsion,1)==a .and. torsion_pairs(torsion,3)==b) .or.&
+                                    (torsion_pairs(torsion,4)==a .and. torsion_pairs(torsion,2)==b)) then
+
+                                    if(torsion_pairs(torsion,1)==a) then
+                                          k=torsion_pairs(torsion,2)
+                                          l=torsion_pairs(torsion,4)
+                                    elseif(torsion_pairs(torsion,4)==a) then
+                                          k=torsion_pairs(torsion,3)
+                                          l=torsion_pairs(torsion,1)
+                                    endif
+                                    Vpp = comp_torsion_energy(get_torsion(disppi,xyz(:,k),disppj&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmi,xyz(:,k),dispmj&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(disppi,xyz(:,k),dispmj&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(dispmi,xyz(:,k),disppj&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                              !If b is an extreme and a is a middle atom next to b
+                              elseif((torsion_pairs(torsion,1)==b .and. torsion_pairs(torsion,2)==a) .or.&
+                                    (torsion_pairs(torsion,4)==b .and. torsion_pairs(torsion,3)==a)) then
+
+                                    if(torsion_pairs(torsion,1)==b) then
+                                          k=torsion_pairs(torsion,3)
+                                          l=torsion_pairs(torsion,4)
+                                    elseif(torsion_pairs(torsion,4)==b) then
+                                          k=torsion_pairs(torsion,2)
+                                          l=torsion_pairs(torsion,1)
+                                    endif
+                                    Vpp = comp_torsion_energy(get_torsion(disppj,disppi,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmj,dispmi,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(dispmj,disppi,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(disppj,dispmi,xyz(:,k)&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                              !If b is an extreme and a is a middle atom not next to b
+                              elseif((torsion_pairs(torsion,1)==b .and. torsion_pairs(torsion,3)==a) .or.&
+                                    (torsion_pairs(torsion,4)==b .and. torsion_pairs(torsion,2)==a)) then
+
+                                    if(torsion_pairs(torsion,1)==b) then
+                                          k=torsion_pairs(torsion,2)
+                                          l=torsion_pairs(torsion,4)
+                                    elseif(torsion_pairs(torsion,4)==b) then
+                                          k=torsion_pairs(torsion,3)
+                                          l=torsion_pairs(torsion,1)
+                                    endif
+                                    Vpp = comp_torsion_energy(get_torsion(disppj,xyz(:,k),disppi&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmm = comp_torsion_energy(get_torsion(dispmj,xyz(:,k),dispmi&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vpm = comp_torsion_energy(get_torsion(dispmj,xyz(:,k),disppi&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                    Vmp = comp_torsion_energy(get_torsion(disppj,xyz(:,k),dispmi&
+                                    ,xyz(:,l)),An(torsion),n(torsion),delta(torsion))
+                                          
                               !If a is an extreme
                               elseif(any(torsion_pairs(torsion,:)==a).and.torsion_pairs(torsion,2)/=a &
                               .and.torsion_pairs(torsion,3)/=a) then
@@ -327,7 +429,6 @@
                                     Vmm = 0.
                               endif
                               H(i,j) = H(i,j) + (Vpp - Vpm - Vmp + Vmm)/(4.d0*hi*hj)
-                        
                         enddo
 
 
