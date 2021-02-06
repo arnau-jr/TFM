@@ -1,6 +1,6 @@
 objects = analysis.o tools.o ff_utils.o
 comp = gfortran
-OPT = -O3
+OPT = -O3 -fbounds-check
 
 analysis.x: $(objects)
 	$(comp) -o analysis.x $(OPT) $(objects)

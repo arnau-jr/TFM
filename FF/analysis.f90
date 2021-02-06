@@ -4,14 +4,14 @@
 
       integer :: Natoms,Nbonds,Nangles,Ntorsions
       character,allocatable :: S(:)*2
-      real,allocatable :: xyz(:,:),dmat(:,:)
+      real*8,allocatable :: xyz(:,:),dmat(:,:)
       logical,allocatable :: bond_graph(:,:)
       integer,allocatable :: bond_pairs(:,:),angle_pairs(:,:),torsion_pairs(:,:)
-      real,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
-      real,allocatable :: req(:),kb(:)
-      real,allocatable :: aeq(:),ka(:)
-      real,allocatable :: An(:),n(:),delta(:)
-      real*8,allocatable :: H(:,:)
+      real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
+      ! real*8,allocatable :: req(:),kb(:)
+      ! real*8,allocatable :: aeq(:),ka(:)
+      ! real*8,allocatable :: An(:),n(:),delta(:)
+      real*8,allocatable :: H(:,:),G(:,:)
       integer :: i
       
       character :: input_filename*90,output_filename*90
@@ -22,15 +22,10 @@
             print*, "Error : input file does not have xyz extension"
             stop
       endif
-      if(command_argument_count() == 2) then
-            call get_command_argument(2,output_filename)
-      else
-            write(output_filename,"(A,A)")input_filename(:index(input_filename,".gzmat")),"xyz"  
-      endif
 
 
       open(1,file=input_filename)
-      open(2,file=output_filename)
+      open(2,file="param.dat")
 
 
       call get_xyz(1,Natoms,S,xyz)
@@ -48,27 +43,23 @@
 
       call get_torsions(Natoms,xyz,bond_graph,torsion_pairs,torsion_vals)
       Ntorsions = size(torsion_vals)
+      
 
-      allocate(req(Nbonds),kb(Nbonds))
-      allocate(aeq(Nangles),ka(Nangles))
-      allocate(An(Ntorsions),n(Ntorsions),delta(Ntorsions))
+      call get_param(2,Nbonds,Nangles,Ntorsions)
 
-      req = 1.4
-      kb = 1.
-      aeq = 0.
-      ka = 1.
-      An = 10.
-      n = 1.
-      delta = 0.
       print*,comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
-            angle_vals,torsion_vals,req,kb,aeq,ka,An,n,delta)
+            angle_vals,torsion_vals)
       
       allocate(H(3*Natoms,3*Natoms))
       H = build_hessian(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
-            bond_pairs,angle_pairs,torsion_pairs,req,kb,aeq,ka,An,n,delta)
+            bond_pairs,angle_pairs,torsion_pairs)
 
+      allocate(G(3,Natoms))
+      G = build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
+      bond_pairs,angle_pairs,torsion_pairs)
+      
       do i=1,3*Natoms
-            print*,H(i,i)
+            print"(20(F7.2,2X))",H(i,:20)
       enddo
 
       end
