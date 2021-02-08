@@ -2,13 +2,15 @@
             implicit none
             real*8,parameter :: pi=4.*atan(1.) 
             real*8,parameter :: cov(10) = (/0.37,0.,0.,0.,0.,0.77,0.75,0.73,0.,0./)
+            real*8,parameter :: mass(10) = (/1.008,0.,0.,0.,0.,12.01,14.01,16.00,0.,0./)
 
             contains
 
-            subroutine parse_atomic_symbol_to_num(N,S,Z)
+            subroutine parse_atomic_symbol(N,S,Z,M)
                   implicit none
                   integer :: N
                   character :: S(N)*2
+                  real*8 :: M(N)
                   integer :: Z(N),i
 
                   do i=1,N
@@ -23,6 +25,7 @@
                         else
                               write(*,*)"Parsing: atom not recognized"
                         endif
+                        M(i) = mass(Z(i))
                   enddo
             end
 
@@ -145,17 +148,15 @@
                   enddo
             end function get_dist_matrix
 
-            function get_bond_graph(N,S,dmat) result(bond_graph)
+            function get_bond_graph(N,Z,dmat) result(bond_graph)
                   implicit none
                   integer :: N
-                  character :: S(N)*2
+                  integer :: Z(N)
                   real*8 :: dmat(N,N)
                   logical,allocatable :: bond_graph(:,:)
                   real*8,parameter :: thresh = 1.2
-                  integer :: Z(N)
                   integer :: counter,i,j
 
-                  call parse_atomic_symbol_to_num(N,S,Z)
                   
                   allocate(bond_graph(N,N))
                   bond_graph = .false.
@@ -169,18 +170,15 @@
                   enddo
             end function get_bond_graph
 
-            subroutine get_bonds(N,S,dmat,bond_pairsbis,bond_valsbis)
+            subroutine get_bonds(N,Z,dmat,bond_pairsbis,bond_valsbis)
                   implicit none
                   integer :: N
-                  character :: S(N)*2
+                  integer :: Z(N)
                   real*8 :: dmat(N,N)
                   integer,allocatable :: bond_pairs(:,:),bond_pairsbis(:,:)
                   real*8,allocatable :: bond_vals(:),bond_valsbis(:)
                   real*8,parameter :: thresh = 1.2
-                  integer :: Z(N)
                   integer :: Nbonds,i,j
-
-                  call parse_atomic_symbol_to_num(N,S,Z)
                   
                   allocate(bond_pairs(N*N,2),bond_vals(N*N))
                   Nbonds = 0

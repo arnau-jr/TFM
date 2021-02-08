@@ -4,13 +4,11 @@
 
       integer :: Natoms,Nbonds,Nangles,Ntorsions
       character,allocatable :: S(:)*2
-      real*8,allocatable :: xyz(:,:),dmat(:,:)
+      integer,allocatable :: Z(:)
+      real*8,allocatable :: M(:),xyz(:,:),dmat(:,:)
       logical,allocatable :: bond_graph(:,:)
       integer,allocatable :: bond_pairs(:,:),angle_pairs(:,:),torsion_pairs(:,:)
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
-      ! real*8,allocatable :: req(:),kb(:)
-      ! real*8,allocatable :: aeq(:),ka(:)
-      ! real*8,allocatable :: An(:),n(:),delta(:)
       real*8,allocatable :: H(:,:),G(:,:)
       integer :: i
       
@@ -29,11 +27,13 @@
 
 
       call get_xyz(1,Natoms,S,xyz)
+      allocate(Z(Natoms),M(Natoms))
+      call parse_atomic_symbol(Natoms,S,Z,M)
 
       dmat =  get_dist_matrix(Natoms,xyz)
-      bond_graph = get_bond_graph(Natoms,S,dmat)
+      bond_graph = get_bond_graph(Natoms,Z,dmat)
 
-      call get_bonds(Natoms,S,dmat,bond_pairs,bond_vals)
+      call get_bonds(Natoms,Z,dmat,bond_pairs,bond_vals)
       Nbonds = size(bond_vals)
 
 
