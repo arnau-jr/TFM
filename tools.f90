@@ -84,7 +84,13 @@
                   u2 = u2/sqrt(sum(u2**2))
 
                   proj = sum(u1*u2)
-                  A = 180. - (180./pi)*acos(proj)
+                  if(proj>=1.d0) then
+                        A = 180.d0
+                  elseif(proj<=-1.d0) then
+                        A = 0.d0
+                  else
+                        A = 180.d0 - (180.d0/pi)*acos(proj)
+                  endif
             end function get_angle
 
             function get_torsion(c1,c2,c3,c4) result(T)
@@ -111,7 +117,13 @@
                   proj = sum(u12*u34)
                   proj2 = sum(u12*u4)
 
-                  T = 180. - (180./pi)*sign(1.d0,proj2)*acos(proj)
+                  if(proj>=1.d0) then
+                        T = 180.d0
+                  elseif(proj<=-1.d0) then
+                        T = 180.d0 - 180.d0*sign(1.d0,proj2)
+                  else
+                        T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
+                  endif
             end function get_torsion
 
             subroutine get_xyz(port,N,S,xyz)
@@ -323,8 +335,10 @@
                   integer :: torsion
 
                   do torsion=1,Ntorsions
-                        torsion_vals(torsion) = get_angle(xyz(:,torsion_pairs(torsion,1)),&
-                        xyz(:,torsion_pairs(torsion,2)),xyz(:,torsion_pairs(torsion,3)))
+                        torsion_vals(torsion) = get_torsion(xyz(:,torsion_pairs(torsion,1)),&
+                        xyz(:,torsion_pairs(torsion,2)),&
+                        xyz(:,torsion_pairs(torsion,3)),&
+                        xyz(:,torsion_pairs(torsion,4)))
                   enddo
       end function recomp_torsions
 

@@ -13,7 +13,7 @@
 
       real*8,allocatable :: v(:,:)
       real*8,parameter :: dt=0.01d0
-      ! integer,parameter :: Nt = 10000
+      integer,parameter :: Nt = 10000
 
       integer :: i
 
@@ -28,7 +28,7 @@
 
 
       open(1,file=input_filename)
-      open(2,file="../FF/param.dat")
+      open(2,file="param.dat")
       open(3,file="trajectory.xyz")
 
 
@@ -58,21 +58,17 @@
       G = -build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
       bond_pairs,angle_pairs,torsion_pairs)
 
-      print*,sum(G*G)
 
       call write_conf(3,Natoms,S,xyz,3)
       v = 0.d0
 
-      i = 0
       E = comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
             angle_vals,torsion_vals)
-      do while(sum(G*G)>1.d-11)!2.5d-9
-            i = i + 1
+      do i=1,Nt
+
             call verletvel_step(Natoms,dt,M,xyz,v,G,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs)
 
-            v = 0.*v
-            
             bond_vals = recomp_bonds(Natoms,Nbonds,xyz,bond_pairs)
             angle_vals = recomp_angles(Natoms,Nangles,xyz,angle_pairs)
             torsion_vals = recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs)
@@ -81,23 +77,12 @@
             angle_vals,torsion_vals)
 
 
-            if(mod(i,100)==0) then
-                  print*,E,sum(G*G)
+            if(mod(i,10)==0) then
+                  print*,i*dt,bond_vals(1)
 
                   call write_conf(3,Natoms,S,xyz,3)
             endif
       enddo
-
-      bond_vals = recomp_bonds(Natoms,Nbonds,xyz,bond_pairs)
-      angle_vals = recomp_angles(Natoms,Nangles,xyz,angle_pairs)
-      torsion_vals = recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs)
-
-      print*,"Final energy and gradient:",comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
-      angle_vals,torsion_vals),sum(G*G)
-
-      close(3)
-      open(3,file="DPNA_opti.xyz")
-      call write_conf(3,Natoms,S,xyz,3)
 
       end
 

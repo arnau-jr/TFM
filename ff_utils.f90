@@ -99,7 +99,7 @@
                   integer :: bond_pairs(Nbonds,2),angle_pairs(Nangles,3),torsion_pairs(Ntorsions,4)
                   real*8 :: bond_vals(Nbonds),angle_vals(Nangles),torsion_vals(Ntorsions)
                   real*8 :: G(3,Natoms)
-                  real*8,parameter :: hi = 0.01
+                  real*8,parameter :: hi = 5.d-6
                   real*8 :: Vp,Vm
                   integer :: a,b,p,q,i,j
                   integer :: bond,angle,torsion,k,l,m
@@ -142,11 +142,10 @@
                   integer :: bond_pairs(Nbonds,2),angle_pairs(Nangles,3),torsion_pairs(Ntorsions,4)
                   real*8 :: bond_vals(Nbonds),angle_vals(Nangles),torsion_vals(Ntorsions)
                   real*8 :: H(3*Natoms,3*Natoms)
-                  real*8,parameter :: hi = 0.01,hj = 0.01
-                  real*8 :: disppi(3),dispmi(3),disppj(3),dispmj(3)
+                  ! real*8,parameter :: hi = 5.d-6,hj = 5.d-6
+                  real*8,parameter :: hi = 0.1,hj = 0.1
                   real*8 :: V,Vpp,Vmm,Vpm,Vmp
                   integer :: a,b,p,q,i,j
-                  integer :: bond,angle,torsion,k,l,m
 
                   H = 0.d0
                   do a=1,Natoms

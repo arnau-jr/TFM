@@ -11,6 +11,7 @@
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
       real*8,allocatable :: H(:,:),Hm(:,:),G(:,:)
       real*8,allocatable :: d(:),v(:,:)
+      real*8 :: mu,freq2
       integer :: i,j,a,b,p,q,nrot
       
       character :: input_filename*90,output_filename*90
@@ -68,15 +69,19 @@
             enddo
       enddo
 
-      ! do i=1,3*Natoms
-      !       print"(20(F7.2,2X))",Hm(i,:20)
-      ! enddo
+      do i=1,3*Natoms
+            ! print"(20(F7.2,2X))",Hm(i,:20)
+            print"(6(F14.11,2X))",H(i,:)
+      enddo
+      print*,""
 
-      ! G = build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
-      ! bond_pairs,angle_pairs,torsion_pairs)
-      ! do i=1,3*Natoms
-      !       print"(3(F7.3,2X))",G(i,:)
-      ! enddo
+
+      allocate(G(3,Natoms))
+      G = build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
+      bond_pairs,angle_pairs,torsion_pairs)
+      do i=1,Natoms
+            print"(3(F14.11,2X))",G(:,i)
+      enddo
 
       allocate(d(3*Natoms),v(3*Natoms,3*Natoms))
       call jacobi(Hm,1,3*Natoms,d,v,nrot)
@@ -84,9 +89,15 @@
 
       print*,"Jacobi finished, took",nrot,"rotations"
       do i=1,3*Natoms
-            print*,d(i)
+            print"(F14.11)",d(i)
       enddo
 
+      mu = M(1)*M(2)/(M(1)+M(2))
+      freq2 = (2.d0*kb(1))/mu
+
+      print*,"Last eigenvalue should be",freq2
+      print*,"Absolute error",abs(d(6)-freq2)
+      print*,"% error",abs(d(6)-freq2)/freq2 * 100.d0
 
       end
 

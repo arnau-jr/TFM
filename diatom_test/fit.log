@@ -1,0 +1,186 @@
+
+
+*******************************************************************************
+Thu Feb 11 09:37:00 2021
+
+
+FIT:    data read from "vib_traj.dat" using 1:2
+        format = x:z
+        #datapoints = 100
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*cos(b*x)
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b            
+   0 2.7271397732e+02   0.00e+00  2.85e+02    1.000000e+00   1.000000e+00
+   1 2.7271397732e+02   0.00e+00  2.85e+09    1.000000e+00   1.000000e+00
+
+After 1 iterations the fit converged.
+final sum of squares of residuals : 272.714
+rel. change during last iteration : 0
+
+degrees of freedom    (FIT_NDF)                        : 98
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 1.66817
+variance of residuals (reduced chisquare) = WSSR/ndf   : 2.7828
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = 1                +/- 0.2471       (24.71%)
+b               = 1                +/- 0.0004335    (0.04335%)
+
+correlation matrix of the fit parameters:
+                a      b      
+a               1.000 
+b               0.297  1.000 
+
+
+*******************************************************************************
+Thu Feb 11 09:38:58 2021
+
+
+FIT:    data read from "vib_traj.dat" using 1:2
+        format = x:z
+        #datapoints = 1000
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*cos(b*x)
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b            
+   0 2.8126478566e+03   0.00e+00  7.27e+02    1.000000e+00   1.000000e+00
+   5 2.3092801915e+03  -1.43e-02  7.27e-03   -2.950172e-03   1.001313e+00
+
+After 5 iterations the fit converged.
+final sum of squares of residuals : 2309.28
+rel. change during last iteration : -1.42555e-07
+
+degrees of freedom    (FIT_NDF)                        : 998
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 1.52115
+variance of residuals (reduced chisquare) = WSSR/ndf   : 2.31391
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = -0.00295017      +/- 0.09909      (3359%)
+b               = 1.00131          +/- 0.02314      (2.311%)
+
+correlation matrix of the fit parameters:
+                a      b      
+a               1.000 
+b              -0.727  1.000 
+
+
+*******************************************************************************
+Thu Feb 11 09:39:36 2021
+
+
+FIT:    data read from "vib_traj.dat" using 1:2
+        format = x:z
+        #datapoints = 1000
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*cos(b*x) + c
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c            
+   0 2.9992627882e+02   0.00e+00  1.84e+00   -2.950172e-03   1.001313e+00   1.000000e+00
+   4 4.5224120993e+01  -5.90e-03  1.84e+01   -8.784857e-04   1.002423e+00   1.504679e+00
+
+After 4 iterations the fit converged.
+final sum of squares of residuals : 45.2241
+rel. change during last iteration : -5.90102e-08
+
+degrees of freedom    (FIT_NDF)                        : 997
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 0.212979
+variance of residuals (reduced chisquare) = WSSR/ndf   : 0.0453602
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = -0.000878486     +/- 0.01388      (1580%)
+b               = 1.00242          +/- 0.01089      (1.086%)
+c               = 1.50468          +/- 0.006735     (0.4476%)
+
+correlation matrix of the fit parameters:
+                a      b      c      
+a               1.000 
+b              -0.727  1.000 
+c               0.001 -0.000  1.000 
+
+
+*******************************************************************************
+Thu Feb 11 09:40:07 2021
+
+
+FIT:    data read from "vib_traj.dat" using 1:2
+        format = x:z
+        #datapoints = 1000
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*cos(b*x) + c
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c            
+   0 6.5284952623e+01   0.00e+00  1.19e+02    2.000000e-01   1.002423e+00   1.504679e+00
+   5 4.5224122755e+01  -5.60e-03  1.19e-03   -5.746508e-04   1.004114e+00   1.504679e+00
+
+After 5 iterations the fit converged.
+final sum of squares of residuals : 45.2241
+rel. change during last iteration : -5.60346e-08
+
+degrees of freedom    (FIT_NDF)                        : 997
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 0.212979
+variance of residuals (reduced chisquare) = WSSR/ndf   : 0.0453602
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = -0.000574651     +/- 0.01389      (2417%)
+b               = 1.00411          +/- 0.01668      (1.661%)
+c               = 1.50468          +/- 0.006735     (0.4476%)
+
+correlation matrix of the fit parameters:
+                a      b      c      
+a               1.000 
+b              -0.728  1.000 
+c               0.001 -0.001  1.000 
+
+
+*******************************************************************************
+Thu Feb 11 09:41:28 2021
+
+
+FIT:    data read from "vib_traj.dat" using 1:2
+        format = x:z
+        #datapoints = 1000
+        residuals are weighted equally (unit weight)
+
+function used for fitting: f(x)
+	f(x) = a*cos(b*x) + c
+fitted parameters initialized with current variable values
+
+iter      chisq       delta/lim  lambda   a             b             c            
+   0 3.2208180769e+02   0.00e+00  4.78e+00    2.000000e-01   1.000000e+00   1.000000e+00
+   3 4.5206751303e+01  -2.22e-01  4.78e+00   -4.772629e-03   1.000608e+00   1.504631e+00
+
+After 3 iterations the fit converged.
+final sum of squares of residuals : 45.2068
+rel. change during last iteration : -2.2246e-06
+
+degrees of freedom    (FIT_NDF)                        : 997
+rms of residuals      (FIT_STDFIT) = sqrt(WSSR/ndf)    : 0.212938
+variance of residuals (reduced chisquare) = WSSR/ndf   : 0.0453428
+
+Final set of parameters            Asymptotic Standard Error
+=======================            ==========================
+a               = -0.00477263      +/- 0.009546     (200%)
+b               = 1.00061          +/- 0.03439      (3.437%)
+c               = 1.50463          +/- 0.006736     (0.4477%)
+
+correlation matrix of the fit parameters:
+                a      b      c      
+a               1.000 
+b              -0.023  1.000 
+c               0.006  0.023  1.000 
