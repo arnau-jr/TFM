@@ -5,8 +5,6 @@
             real*8,allocatable :: aeq(:),ka(:)
             real*8,allocatable :: An(:),n(:),delta(:) 
             real*8,parameter :: kcal_to_kj = 4.184d0
-            real*8,parameter :: h_cm_dps = 8065.6d0*4.135667696d-2
-            real*8,parameter :: hbar_cm_dps = 8065.6d0*6.582119569d-3
 
             contains
 
@@ -148,8 +146,8 @@
                   integer :: bond_pairs(Nbonds,2),angle_pairs(Nangles,3),torsion_pairs(Ntorsions,4)
                   real*8 :: bond_vals(Nbonds),angle_vals(Nangles),torsion_vals(Ntorsions)
                   real*8 :: H(3*Natoms,3*Natoms)
-                  real*8,parameter :: hi = 5.d-6,hj = 5.d-6
-                  ! real*8,parameter :: hi = 0.001,hj = 0.001
+                  ! real*8,parameter :: hi = 5.d-6,hj = 5.d-6
+                  real*8,parameter :: hi = 0.001,hj = 0.001
                   real*8 :: V,Vpp,Vmm,Vpm,Vmp
                   integer :: a,b,p,q,i,j
 

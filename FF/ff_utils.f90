@@ -4,6 +4,9 @@
             real*8,allocatable :: req(:),kb(:)
             real*8,allocatable :: aeq(:),ka(:)
             real*8,allocatable :: An(:),n(:),delta(:) 
+            real*8,parameter :: kcal_to_kj = 4.184d0
+            real*8,parameter :: h_cm_dps = 8065.6d0*4.135667696d-2
+            real*8,parameter :: hbar_cm_dps = 8065.6d0*6.582119569d-3
 
             contains
 
@@ -19,14 +22,17 @@
             
                   do i=1,Nbonds
                         read(port,*)dummy,dummy2,kb(i),req(i)
+                        kb(i) = kb(i)*kcal_to_kj
                   enddo
                   read(port,*)
                   do i=1,Nangles
                         read(port,*)dummy,dummy2,ka(i),aeq(i)
+                        ka(i) = ka(i)*kcal_to_kj
                   enddo
                   read(port,*)
                   do i=1,Ntorsions
                         read(port,*)dummy,dummy2,dummy3,An(i),delta(i),n(i)
+                        An(i) = An(i)*kcal_to_kj
                   enddo
       end subroutine get_param
             real*8 function comp_bond_energy(r,req,k) result(E)
@@ -143,10 +149,9 @@
                   real*8 :: bond_vals(Nbonds),angle_vals(Nangles),torsion_vals(Ntorsions)
                   real*8 :: H(3*Natoms,3*Natoms)
                   real*8,parameter :: hi = 5.d-6,hj = 5.d-6
-                  real*8 :: disppi(3),dispmi(3),disppj(3),dispmj(3)
+                  ! real*8,parameter :: hi = 0.001,hj = 0.001
                   real*8 :: V,Vpp,Vmm,Vpm,Vmp
                   integer :: a,b,p,q,i,j
-                  integer :: bond,angle,torsion,k,l,m
 
                   H = 0.d0
                   do a=1,Natoms

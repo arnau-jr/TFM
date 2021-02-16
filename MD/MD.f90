@@ -12,7 +12,7 @@
       real*8 :: E
 
       real*8,allocatable :: v(:,:)
-      real*8,parameter :: dt=0.01d0
+      real*8,parameter :: dt=1d-3 !0.1 fs
       ! integer,parameter :: Nt = 10000
 
       integer :: i
@@ -58,20 +58,26 @@
       G = -build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
       bond_pairs,angle_pairs,torsion_pairs)
 
-      print*,sum(G*G)
+      E = comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
+      angle_vals,torsion_vals)      
 
       call write_conf(3,Natoms,S,xyz,3)
       v = 0.d0
 
+      print*,E,sum(v*v),sum(G*G)
+
       i = 0
-      E = comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
-            angle_vals,torsion_vals)
-      do while(sum(G*G)>1.d-11)!2.5d-9
+      do while(sum(G*G)>8.5d-11)!8.5d-11
             i = i + 1
             call verletvel_step(Natoms,dt,M,xyz,v,G,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs)
 
-            v = 0.*v
+            if(sum(G*G)>1.d-10) then
+                  v = 0.99*v
+            else
+                  v = 0.8*v
+            endif
+
             
             bond_vals = recomp_bonds(Natoms,Nbonds,xyz,bond_pairs)
             angle_vals = recomp_angles(Natoms,Nangles,xyz,angle_pairs)
@@ -82,7 +88,7 @@
 
 
             if(mod(i,100)==0) then
-                  print*,E,sum(G*G)
+                  print*,E,sum(v*v),sum(G*G)
 
                   call write_conf(3,Natoms,S,xyz,3)
             endif

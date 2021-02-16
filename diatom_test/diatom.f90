@@ -89,7 +89,7 @@
 
       print*,"Jacobi finished, took",nrot,"rotations"
       do i=1,3*Natoms
-            print"(F14.11)",d(i)
+            print"(F20.17)",d(i)
       enddo
 
       mu = M(1)*M(2)/(M(1)+M(2))
