@@ -1,0 +1,27 @@
+
+#
+
+nitromethane
+
+0  1
+C
+N  1  CN
+O  2  NO  1  CO
+X  1  CH  2  NH  3  d2
+O  2  NO  1  CO  4  d3
+H  1  CH  2  NH  3  d2
+H  1  CH  2  NH  5  d1
+H  1  CH  2  NH  3  d4
+Variables:
+CN= 1.499574
+NO= 1.226747
+CH= 1.090000
+NH= 107.560708
+CO= 117.039960
+HH= 111.312289
+OO= 125.890000
+d1= 30.0
+d2= 90.0
+d3= -90.0
+d4= -30.0
+d5= 180.0

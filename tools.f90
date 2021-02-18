@@ -4,6 +4,8 @@
             real*8,parameter :: cov(10) = (/0.37,0.,0.,0.,0.,0.77,0.75,0.73,0.,0./)
             real*8,parameter :: mass(10) = (/1.008,0.,0.,0.,0.,12.01,14.01,16.00,0.,0./)
 
+            real*8,allocatable :: xyz(:,:)
+
             contains
 
             subroutine parse_atomic_symbol(N,S,Z,M)
@@ -125,6 +127,35 @@
                         T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
                   endif
             end function get_torsion
+
+            function get_improper(c1,c2,c3,c4) result(I)
+                  implicit none
+                  real*8 :: c1(3),c2(3),c3(3),c4(3)
+                  real*8 :: u12(3),u23(3),u24(3)
+                  real*8 :: u234(3)
+                  real*8 :: proj
+                  real*8 :: I
+
+                  u12 = c2-c1
+                  u23 = c3-c2
+                  u24 = c4-c2
+      
+                  u12 = u12/sqrt(sum(u12**2))
+                  u23 = u23/sqrt(sum(u23**2))
+                  u24 = u24/sqrt(sum(u24**2))
+
+                  u234 = unit_cross(u23,u24)
+                  
+                  proj = sum(u12*u234)
+
+                  if(proj>=1.d0) then
+                        I = 0.d0
+                  elseif(proj<=-1.d0) then
+                        I = 180.d0
+                  else
+                        I = (180.d0/pi)*acos(proj) - 90.d0
+                  endif
+            end function get_improper
 
             subroutine get_xyz(port,N,S,xyz)
                   implicit none
@@ -341,6 +372,21 @@
                         xyz(:,torsion_pairs(torsion,4)))
                   enddo
       end function recomp_torsions
+
+                  function recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs) result(improper_vals)
+                  implicit none
+                  integer :: Natoms,Nimpropers
+                  integer :: improper_pairs(Nimpropers,4)
+                  real*8 :: xyz(3,Natoms),improper_vals(Nimpropers)
+                  integer :: improper
+
+                  do improper=1,Nimpropers
+                        improper_vals(improper) = get_improper(xyz(:,improper_pairs(improper,1)),&
+                        xyz(:,improper_pairs(improper,2)),&
+                        xyz(:,improper_pairs(improper,3)),&
+                        xyz(:,improper_pairs(improper,4)))
+                  enddo
+      end function recomp_impropers
 
             subroutine save_zmat(port,N,Nangle,Ntorsion,S,dmat,bond_graph,angle_pairs,angle_vals,torsion_pairs,torsion_vals)
                   implicit none

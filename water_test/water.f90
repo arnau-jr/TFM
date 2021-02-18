@@ -5,7 +5,7 @@
       integer :: Natoms,Nbonds,Nangles,Ntorsions
       character,allocatable :: S(:)*2
       integer,allocatable :: Z(:)
-      real*8,allocatable :: M(:),xyz(:,:),dmat(:,:)
+      real*8,allocatable :: M(:),dmat(:,:)
       logical,allocatable :: bond_graph(:,:)
       integer,allocatable :: bond_pairs(:,:),angle_pairs(:,:),torsion_pairs(:,:)
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
@@ -14,9 +14,10 @@
       real*8 :: mu,freq2
       integer :: i,j,a,b,p,q,nrot
       
-      character :: input_filename*90,output_filename*90
+      character :: input_filename*90,param_filename*90
 
       call get_command_argument(1,input_filename)
+      call get_command_argument(2,param_filename)
 
       if(index(input_filename,".xyz")==0) then
             print*, "Error : input file does not have xyz extension"
@@ -25,7 +26,7 @@
 
 
       open(1,file=input_filename)
-      open(2,file="param.dat")
+      open(2,file=param_filename)
 
 
       call get_xyz(1,Natoms,S,xyz)
@@ -95,7 +96,7 @@
 
       print*,"Energy"
       do i=7,3*Natoms
-            print"(F20.12)",0.5d0*sqrt(d(i))*hbar_cm_dps
+            print"(F20.12)",sqrt(d(i))*hbar_cm_dps
       enddo
 
       end
