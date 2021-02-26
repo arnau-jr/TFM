@@ -4,7 +4,7 @@ comp = gfortran
 OPT = -O3 -fbounds-check
 
 nitromethane.x: $(objects)
-	$(comp) -o nitromethane.x $(OPT) $(objects) -llapack
+	$(comp) -o nitromethane.x $(OPT) $(objects)
 
 MD.x: $(objectsbis)
 	$(comp) -o MD.x $(OPT) $(objectsbis)
@@ -16,7 +16,7 @@ ff_utils.o: ../ff_utils.f90 ../tools.f90
 	$(comp) -c $(OPT) ../ff_utils.f90 ../tools.f90
 
 nitromethane.o: nitromethane.f90 ../tools.f90 ../ff_utils.f90 tools.o ff_utils.o
-	$(comp) -c $(OPT) nitromethane.f90 ../tools.f90 ../ff_utils.f90 -llapack
+	$(comp) -c $(OPT) nitromethane.f90 ../tools.f90 ../ff_utils.f90
 
 MD.o: MD.f90 ../tools.f90 ../ff_utils.f90 tools.o ff_utils.o
 	$(comp) -c $(OPT) MD.f90 ../tools.f90 ../ff_utils.f90

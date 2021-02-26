@@ -124,8 +124,6 @@
                   integer :: i
                   E = 0.
                   do i=1,Nimpropers
-                        ! I = get_improper(xyz(:,improper_pairs(k,1)),xyz(:,improper_pairs(k,2)),&
-                        ! xyz(:,improper_pairs(k,3)),xyz(:,improper_pairs(k,4)))
                         E = E + impAn(i)*(1. + cos((pi/180.d0)*(impn(i)*improper_vals(i) - impdelta(i))))
                   enddo
       end function comp_impropers_energy
@@ -188,7 +186,7 @@
                   bond_vals = recomp_bonds(Natoms,Nbonds,xyz,bond_pairs)
                   angle_vals = recomp_angles(Natoms,Nangles,xyz,angle_pairs)
                   torsion_vals = recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs)
-                  improper_vals = recomp_impropers(Natoms,Nimpropers,xyzmod,improper_pairs)
+                  improper_vals = recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs)
       end function build_gradient
 
             function build_hessian(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
@@ -306,7 +304,7 @@
                   bond_vals = recomp_bonds(Natoms,Nbonds,xyz,bond_pairs)
                   angle_vals = recomp_angles(Natoms,Nangles,xyz,angle_pairs)
                   torsion_vals = recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs)
-                  improper_vals = recomp_impropers(Natoms,Nimpropers,xyzmod,improper_pairs)
+                  improper_vals = recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs)
       end function build_hessian
 
       end module ff_utils

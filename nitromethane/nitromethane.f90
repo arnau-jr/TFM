@@ -11,6 +11,7 @@
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
       real*8,allocatable :: H(:,:),Hm(:,:),G(:,:)
       real*8,allocatable :: d(:),v(:,:)
+      real*8 :: work(100)
       real*8 :: mu,freq2
       integer :: i,j,a,b,p,q,nrot
       
@@ -57,10 +58,10 @@
       !       print*,angle_pairs(i,:),angle_vals(i)
       ! enddo
       ! print*,""
-      ! print*,Ntorsions
-      ! do i=1,Ntorsions
-      !       print*,torsion_pairs(i,:),torsion_vals(i)
-      ! enddo
+      print*,Ntorsions
+      do i=1,Ntorsions
+            print*,torsion_pairs(i,:),torsion_vals(i)
+      enddo
       
 
       call get_param(2,Nbonds,Nangles,Ntorsions)
@@ -93,6 +94,8 @@
       allocate(G(3,Natoms))
       G = build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
       bond_pairs,angle_pairs,torsion_pairs)
+
+      print"(A,E14.7,A)","Total gradient: ",sum(G*G)," (kJ/mol/A)^2"
       do i=1,Natoms
             print"(3(F14.7,2X))",G(:,i)
       enddo
@@ -106,10 +109,12 @@
       print*,"Impropers: ",comp_impropers_energy()
 
       allocate(d(3*Natoms),v(3*Natoms,3*Natoms))
-      call jacobi(Hm,1,3*Natoms,d,v,nrot)
-      call sort_ev(d,v,3*Natoms)
+      ! call jacobi(Hm,1,3*Natoms,d,v,nrot)
+      ! call sort_ev(d,v,3*Natoms)
 
-      print*,"Jacobi finished, took",nrot,"rotations"
+      call dsyev("N","U",3*Natoms,Hm,3*Natoms,d,work,100,i)
+
+      ! print*,"Jacobi finished, took",nrot,"rotations"
       print*,"Eigenvalues"
       do i=1,6
             print"(F20.15)",d(i)
@@ -121,11 +126,10 @@
 
       print*,"Energy"
       do i=7,3*Natoms
-            print"(F20.12)",sqrt(d(i))*hbar_cm_dps
+            print"(F20.12,2X,I4)",sqrt(d(i))*hbar_cm_dps,nint(sqrt(d(i))*hbar_cm_dps)
       enddo
 
       print*,""
-      print*,improper_vals
 
       end
 

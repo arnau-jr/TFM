@@ -98,64 +98,112 @@
             function get_torsion(c1,c2,c3,c4) result(T)
                   implicit none
                   real*8 :: c1(3),c2(3),c3(3),c4(3)
-                  real*8 :: u1(3),u2(3),u3(3),u4(3)
-                  real*8 :: u12(3),u34(3)
+                  real*8 :: u12(3),u23(3),u32(3),u43(3)
+                  real*8 :: u1232(3),u2343(3)
                   real*8 :: proj,proj2
                   real*8 :: T
 
-                  u1 = c2-c1
-                  u2 = c3-c2
-                  u3 = c2-c3
-                  u4 = c4-c3
-      
-                  u1 = u1/sqrt(sum(u1**2))
-                  u2 = u2/sqrt(sum(u2**2))
-                  u3 = u3/sqrt(sum(u3**2))
-                  u4 = u4/sqrt(sum(u4**2))
-
-                  u12 = unit_cross(u1,u2)
-                  u34 = unit_cross(u3,u4)
-                  
-                  proj = sum(u12*u34)
-                  proj2 = sum(u12*u4)
-
-                  if(proj>=1.d0) then
-                        T = 180.d0
-                  elseif(proj<=-1.d0) then
-                        T = 180.d0 - 180.d0*sign(1.d0,proj2)
-                  else
-                        T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
-                  endif
-            end function get_torsion
-
-            function get_improper(c1,c2,c3,c4) result(I)
-                  implicit none
-                  real*8 :: c1(3),c2(3),c3(3),c4(3)
-                  real*8 :: u12(3),u23(3),u24(3)
-                  real*8 :: u234(3)
-                  real*8 :: proj
-                  real*8 :: I
-
                   u12 = c2-c1
                   u23 = c3-c2
-                  u24 = c4-c2
+                  u32 = c2-c3
+                  u43 = c3-c4
       
                   u12 = u12/sqrt(sum(u12**2))
                   u23 = u23/sqrt(sum(u23**2))
-                  u24 = u24/sqrt(sum(u24**2))
+                  u32 = u32/sqrt(sum(u32**2))
+                  u43 = u43/sqrt(sum(u43**2))
 
-                  u234 = unit_cross(u23,u24)
+                  u1232 = unit_cross(u12,u32)
+                  u2343 = unit_cross(u23,u43)
                   
-                  proj = sum(u12*u234)
+                  proj = sum(u1232*u2343)
+                  proj2 = sum(u1232*u43)
 
+                  ! if(proj>=1.d0) then
+                  !       T = 180.d0
+                  ! elseif(proj<=-1.d0) then
+                  !       T = 180.d0 - 180.d0*sign(1.d0,proj2)
+                  ! else
+                  !       T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
+                  ! endif
                   if(proj>=1.d0) then
-                        I = 0.d0
+                        T = 0.d0*sign(1.d0,-proj2)
                   elseif(proj<=-1.d0) then
-                        I = 180.d0
+                        T = 180.d0*sign(1.d0,-proj2)
                   else
-                        I = (180.d0/pi)*acos(proj) - 90.d0
+                        T = (180.d0/pi)*sign(1.d0,-proj2)*acos(proj)
+                  endif
+            end function get_torsion
+
+            function get_improper(c4,c1,c3,c2) result(T)
+                  implicit none
+                  real*8 :: c1(3),c2(3),c3(3),c4(3)
+                  real*8 :: u12(3),u23(3),u32(3),u43(3)
+                  real*8 :: u1232(3),u2343(3)
+                  real*8 :: proj,proj2
+                  real*8 :: T
+
+                  u12 = c2-c1
+                  u23 = c3-c2
+                  u32 = c2-c3
+                  u43 = c3-c4
+      
+                  u12 = u12/sqrt(sum(u12**2))
+                  u23 = u23/sqrt(sum(u23**2))
+                  u32 = u32/sqrt(sum(u32**2))
+                  u43 = u43/sqrt(sum(u43**2))
+
+                  u1232 = unit_cross(u12,u32)
+                  u2343 = unit_cross(u23,u43)
+                  
+                  proj = sum(u1232*u2343)
+                  proj2 = sum(u1232*u43)
+
+                  ! if(proj>=1.d0) then
+                  !       T = 180.d0
+                  ! elseif(proj<=-1.d0) then
+                  !       T = 180.d0 - 180.d0*sign(1.d0,proj2)
+                  ! else
+                  !       T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
+                  ! endif
+                  if(proj>=1.d0) then
+                        T = 0.d0*sign(1.d0,-proj2)
+                  elseif(proj<=-1.d0) then
+                        T = 180.d0*sign(1.d0,-proj2)
+                  else
+                        T = (180.d0/pi)*sign(1.d0,-proj2)*acos(proj)
                   endif
             end function get_improper
+
+            function get_improper_bac(c4,c1,c3,c2) result(I)
+                  implicit none
+                  real*8 :: c1(3),c2(3),c3(3),c4(3)
+                  real*8 :: u24(3),u34(3),u14(3)
+                  real*8 :: u2434(3)
+                  real*8 :: proj
+                  real*8 :: I
+
+                  u24 = c4-c2
+                  u34 = c4-c3
+                  u14 = c4-c1
+      
+                  u24 = u24/sqrt(sum(u24**2))
+                  u34 = u34/sqrt(sum(u34**2))
+                  u14 = u14/sqrt(sum(u14**2))
+
+                  u2434 = unit_cross(u24,u34)
+                  
+                  proj = sum(u2434*u14)
+
+                  if(proj>=1.d0) then
+                        I = 90.d0
+                  elseif(proj<=-1.d0) then
+                        I = -90.d0
+                  else
+                        I = (180.d0/pi)*asin(proj)
+                  endif
+            end function get_improper_bac
+
 
             subroutine get_xyz(port,N,S,xyz)
                   implicit none

@@ -11,6 +11,7 @@
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
       real*8,allocatable :: H(:,:),Hm(:,:),G(:,:)
       real*8,allocatable :: d(:),v(:,:)
+      real*8 :: work(100)
       real*8 :: mu,freq2
       integer :: i,j,a,b,p,q,nrot
       
@@ -85,10 +86,11 @@
       enddo
 
       allocate(d(3*Natoms),v(3*Natoms,3*Natoms))
-      call jacobi(Hm,1,3*Natoms,d,v,nrot)
-      call sort_ev(d,v,3*Natoms)
+      ! call jacobi(Hm,1,3*Natoms,d,v,nrot)
+      ! call sort_ev(d,v,3*Natoms)
+      call dsyev("N","U",3*Natoms,Hm,3*Natoms,d,work,100,i)
 
-      print*,"Jacobi finished, took",nrot,"rotations"
+      ! print*,"Jacobi finished, took",nrot,"rotations"
       print*,"Eigenvalues"
       do i=1,3*Natoms
             print"(F20.15)",d(i)
@@ -96,7 +98,7 @@
 
       print*,"Energy"
       do i=7,3*Natoms
-            print"(F20.12)",sqrt(d(i))*hbar_cm_dps
+            print"(F20.12,2X,I4)",sqrt(d(i))*hbar_cm_dps,nint(sqrt(d(i))*hbar_cm_dps)
       enddo
 
       end

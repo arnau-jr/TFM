@@ -94,7 +94,7 @@
 
       print*,"Energy (cm^-1)"
       do i=7,3*Natoms
-            print"(F20.12)",sqrt(d(i))*hbar_cm_dps
+            print"(F20.12,2X,I4)",sqrt(d(i))*hbar_cm_dps,nint(sqrt(d(i))*hbar_cm_dps)
       enddo
 
 
