@@ -1,2 +1,5 @@
 *.o
 *.pdf
+*results
+*normal_oscillations
+*gif

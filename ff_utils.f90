@@ -11,9 +11,13 @@
             real*8,allocatable :: aeq(:),ka(:) !Harmonic angles
             real*8,allocatable :: An(:),n(:),delta(:) !Cosine torsions
             real*8,allocatable :: impAn(:),impn(:),impdelta(:) !Cosine impropers
+
             real*8,parameter :: kcal_to_kj = 4.184d0
+            real*8,parameter :: R_kJ_mol_K = 8.31446261815324d-3
+            real*8,parameter :: c_cm_dps = 2.99792458d-3 
             real*8,parameter :: h_cm_dps = 8065.6d0*4.135667696d-2
-            real*8,parameter :: hbar_cm_dps = 8065.6d0*6.582119569d-3
+            ! real*8,parameter :: hbar_cm_dps = 8065.6d0*6.582119569d-3
+            real*8,parameter :: hbar_cm_dps = 1.d0/(2.d0*pi*c_cm_dps)
 
             contains
 
@@ -28,12 +32,17 @@
                   allocate(An(Ntorsions),n(Ntorsions),delta(Ntorsions))
             
                   read(port,*)pot_type
+                  read(port,*)units
                   if(pot_type=="H") allocate(req(Nbonds),kb(Nbonds))
                   if(pot_type=="M") allocate(De(Nbonds),beta(Nbonds),req(Nbonds))
                   do i=1,Nbonds
                         if(pot_type=="H") then
-                              read(port,*)dummy,dummy2,kb(i),req(i)
-                              kb(i) = kb(i)*kcal_to_kj
+                              if(units=="KC") then
+                                    read(port,*)dummy,dummy2,kb(i),req(i)
+                                    kb(i) = kb(i)*kcal_to_kj
+                              elseif(units=="KJ") then
+                                    read(port,*)dummy,dummy2,kb(i),req(i)
+                              endif
                         elseif(pot_type=="M") then
                               read(port,*)dummy,dummy2,De(i),beta(i),req(i)
                               !De should be in kJ/mol
@@ -140,6 +149,34 @@
                   E = E + comp_impropers_energy()
       end function comp_energy
 
+            subroutine test_normal_mode(Natoms,xyz,Hm,k,omega,port)
+                  implicit none
+                  integer :: Natoms,k,port
+                  real*8 :: xyz(3,Natoms),Hm(3*Natoms,3*Natoms),omega
+                  real*8 :: norm_osc(3*Natoms),cart_osc(3*Natoms)
+                  real*8 :: xyz_osc(3,Natoms),dosc
+                  integer :: Nosc,i,j
+
+                  norm_osc = 0.d0
+                  dosc = 0.01/omega
+                  Nosc = nint(((2.d0*pi)/omega)/dosc)
+
+                  ! print*,"NM frequency:",omega
+                  do i=1,Nosc
+
+                        norm_osc(k) = 0.5*sin(omega*dosc*(i-1))
+
+                        cart_osc = matmul(Hm,norm_osc)
+                        
+                        do j=1,Natoms
+                              xyz_osc(1,j) = xyz(1,j) + cart_osc(3*j-2)/sqrt(M(j))
+                              xyz_osc(2,j) = xyz(2,j) + cart_osc(3*j-1)/sqrt(M(j))
+                              xyz_osc(3,j) = xyz(3,j) + cart_osc(3*j)/sqrt(M(j))
+                        enddo
+                        call write_conf(3,Natoms,xyz_osc,port)
+                  enddo
+      end subroutine test_normal_mode
+
             function build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs) result(G)
                   implicit none
@@ -151,8 +188,6 @@
                   real*8,parameter :: hi = 5.d-6
                   real*8 :: Vp,Vm
                   integer :: a,b,p,q,i,j
-                  integer :: bond,angle,torsion,k,l,m
-
 
                   G = 0.d0
                   do a=1,Natoms
@@ -306,5 +341,6 @@
                   torsion_vals = recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs)
                   improper_vals = recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs)
       end function build_hessian
+
 
       end module ff_utils

@@ -3,20 +3,20 @@
       implicit none
 
       integer :: Natoms,Nbonds,Nangles,Ntorsions
-      character,allocatable :: S(:)*2
-      integer,allocatable :: Z(:)
-      real*8,allocatable :: M(:),xyz(:,:),dmat(:,:)
+      real*8,allocatable :: dmat(:,:)
       logical,allocatable :: bond_graph(:,:)
       integer,allocatable :: bond_pairs(:,:),angle_pairs(:,:),torsion_pairs(:,:)
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
-      real*8,allocatable :: H(:,:),Hm(:,:),G(:,:)
+      real*8,allocatable :: H(:,:),Hm(:,:),Hmcopy(:,:),G(:,:)
       real*8,allocatable :: d(:),v(:,:)
+      real*8 :: work(100)
       real*8 :: mu,freq2
       integer :: i,j,a,b,p,q,nrot
       
-      character :: input_filename*90,output_filename*90
+      character :: input_filename*90,param_filename*90
 
       call get_command_argument(1,input_filename)
+      call get_command_argument(2,param_filename)
 
       if(index(input_filename,".xyz")==0) then
             print*, "Error : input file does not have xyz extension"
@@ -28,14 +28,12 @@
       open(2,file="param.dat")
 
 
-      call get_xyz(1,Natoms,S,xyz)
-      allocate(Z(Natoms),M(Natoms))
-      call parse_atomic_symbol(Natoms,S,Z,M)
+      call get_xyz(1,Natoms)
 
       dmat =  get_dist_matrix(Natoms,xyz)
-      bond_graph = get_bond_graph(Natoms,Z,dmat)
+      bond_graph = get_bond_graph(Natoms,dmat)
 
-      call get_bonds(Natoms,Z,dmat,bond_pairs,bond_vals)
+      call get_bonds(Natoms,dmat,bond_pairs,bond_vals)
       Nbonds = size(bond_vals)
 
 
@@ -52,7 +50,7 @@
       print*,comp_energy(Nbonds,Nangles,Ntorsions,bond_vals,&
             angle_vals,torsion_vals)
       
-      allocate(H(3*Natoms,3*Natoms),Hm(3*Natoms,3*Natoms))
+      allocate(H(3*Natoms,3*Natoms),Hm(3*Natoms,3*Natoms),Hmcopy(3*Natoms,3*Natoms))
       H = build_hessian(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs)
       
@@ -79,25 +77,45 @@
       allocate(G(3,Natoms))
       G = build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
       bond_pairs,angle_pairs,torsion_pairs)
-      do i=1,Natoms
-            print"(3(F14.11,2X))",G(:,i)
-      enddo
+      print"(A,E14.7,A)","Total gradient: ",sum(G*G)," (kJ/mol/A)^2"
 
       allocate(d(3*Natoms),v(3*Natoms,3*Natoms))
-      call jacobi(Hm,1,3*Natoms,d,v,nrot)
-      call sort_ev(d,v,3*Natoms)
 
-      print*,"Jacobi finished, took",nrot,"rotations"
-      do i=1,3*Natoms
-            print"(F20.17)",d(i)
+      Hmcopy = Hm
+      call dsyev("V","U",3*Natoms,Hm,3*Natoms,d,work,100,i)
+
+      print*,"Eigenvalues"
+      do i=1,5
+            print"(F20.15)",d(i)
+      enddo
+      print*,""
+      do i=6,3*Natoms
+            print"(F20.15)",d(i)
       enddo
 
+      print*,"Energy"
+      do i=6,3*Natoms
+            print"(F20.12,2X,I4)",sqrt(d(i))*hbar_cm_dps,nint(sqrt(d(i))*hbar_cm_dps)
+      enddo
       mu = M(1)*M(2)/(M(1)+M(2))
       freq2 = (2.d0*kb(1))/mu
 
       print*,"Last eigenvalue should be",freq2
       print*,"Absolute error",abs(d(6)-freq2)
       print*,"% error",abs(d(6)-freq2)/freq2 * 100.d0
+      print*,""
+
+      j = 2
+      do j=1,3*Natoms
+      print*,"Eigenvector",j
+      do i=1,Natoms
+            print"(2(F20.15,2X))",Hm(3*i-2,j)
+            print"(2(F20.15,2X))",Hm(3*i-1,j),sqrt(M(i))
+            print"(2(F20.15,2X))",Hm(3*i,j)
+            print*,""
+      enddo
+      print*,""
+      enddo
 
       end
 

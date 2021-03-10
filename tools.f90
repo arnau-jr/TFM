@@ -4,17 +4,16 @@
             real*8,parameter :: cov(10) = (/0.37,0.,0.,0.,0.,0.77,0.75,0.73,0.,0./)
             real*8,parameter :: mass(10) = (/1.008,0.,0.,0.,0.,12.01,14.01,16.00,0.,0./)
 
-            real*8,allocatable :: xyz(:,:)
+            character,allocatable :: S(:)*2
+            integer,allocatable :: Z(:)
+            real*8,allocatable ::  M(:),xyz(:,:),xyz_mw(:,:)
 
             contains
 
-            subroutine parse_atomic_symbol(N,S,Z,M)
+            subroutine parse_atomic_symbol(N)
                   implicit none
                   integer :: N
-                  character :: S(N)*2
-                  real*8 :: M(N)
-                  integer :: Z(N),i
-
+                  integer :: i
                   do i=1,N
                         if(S(i)=="H") then
                               Z(i) = 1
@@ -42,6 +41,12 @@
       
                   u3 = u3/sqrt(sum(u3**2))
             end function unit_cross
+
+            function get_norm(u) result(a)
+                  implicit none
+                  real*8 :: u(:),a
+                  a = sqrt(sum(u**2))
+      end function get_norm
 
             subroutine get_local_coords(c1,c2,c3,basis)
                   implicit none
@@ -158,14 +163,8 @@
                   
                   proj = sum(u1232*u2343)
                   proj2 = sum(u1232*u43)
+                  ! proj2 = -1.d0
 
-                  ! if(proj>=1.d0) then
-                  !       T = 180.d0
-                  ! elseif(proj<=-1.d0) then
-                  !       T = 180.d0 - 180.d0*sign(1.d0,proj2)
-                  ! else
-                  !       T = 180.d0 - (180.d0/pi)*sign(1.d0,proj2)*acos(proj)
-                  ! endif
                   if(proj>=1.d0) then
                         T = 0.d0*sign(1.d0,-proj2)
                   elseif(proj<=-1.d0) then
@@ -205,22 +204,36 @@
             end function get_improper_bac
 
 
-            subroutine get_xyz(port,N,S,xyz)
+            subroutine get_xyz(port,N)
                   implicit none
                   integer :: port,N
-                  character,allocatable :: S(:)*2
-                  real*8,allocatable :: xyz(:,:)
                   integer :: i
 
                   read(port,*)N
                   read(port,*)
 
-                  allocate(S(N),xyz(3,N))
+                  allocate(S(N),M(N),Z(N),xyz(3,N),xyz_mw(3,N))
 
                   do i = 1,N
                         read(port,*)S(i),xyz(:,i)
                   enddo
+                  call parse_atomic_symbol(N)
+                  do i=1,N
+                        xyz_mw(:,i) = sqrt(M(i))*xyz(:,i)
+                  enddo
             end subroutine get_xyz
+
+            subroutine write_conf(D,N,r,port)
+                  implicit none
+                  integer :: N,D,port,i
+                  real*8 :: r(D,N)
+      
+                  write(port,"(I5)")N
+                  write(port,*)""
+                  do i=1,N
+                        write(port,"(A,2X,E20.10,2X,E20.10,2X,E20.10)")S(i),r(:,i)
+                  enddo
+            end
 
             function get_dist_matrix(N,xyz) result(dmat)
                   implicit none
@@ -239,10 +252,9 @@
                   enddo
             end function get_dist_matrix
 
-            function get_bond_graph(N,Z,dmat) result(bond_graph)
+            function get_bond_graph(N,dmat) result(bond_graph)
                   implicit none
                   integer :: N
-                  integer :: Z(N)
                   real*8 :: dmat(N,N)
                   logical,allocatable :: bond_graph(:,:)
                   real*8,parameter :: thresh = 1.2
@@ -261,10 +273,9 @@
                   enddo
             end function get_bond_graph
 
-            subroutine get_bonds(N,Z,dmat,bond_pairsbis,bond_valsbis)
+            subroutine get_bonds(N,dmat,bond_pairsbis,bond_valsbis)
                   implicit none
                   integer :: N
-                  integer :: Z(N)
                   real*8 :: dmat(N,N)
                   integer,allocatable :: bond_pairs(:,:),bond_pairsbis(:,:)
                   real*8,allocatable :: bond_vals(:),bond_valsbis(:)
@@ -406,7 +417,7 @@
                   enddo
       end function recomp_angles
 
-                  function recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs) result(torsion_vals)
+            function recomp_torsions(Natoms,Ntorsions,xyz,torsion_pairs) result(torsion_vals)
                   implicit none
                   integer :: Natoms,Ntorsions
                   integer :: torsion_pairs(Ntorsions,4)
@@ -421,7 +432,7 @@
                   enddo
       end function recomp_torsions
 
-                  function recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs) result(improper_vals)
+            function recomp_impropers(Natoms,Nimpropers,xyz,improper_pairs) result(improper_vals)
                   implicit none
                   integer :: Natoms,Nimpropers
                   integer :: improper_pairs(Nimpropers,4)
@@ -435,6 +446,91 @@
                         xyz(:,improper_pairs(improper,4)))
                   enddo
       end function recomp_impropers
+
+            function unpack_coords(packed) result (unpacked)
+                  implicit none
+                  real*8 :: packed(:,:)
+                  real*8 :: unpacked(3*size(packed,2))
+                  integer :: i
+                  do i=1,size(packed,2)
+                        unpacked(3*i-2) = packed(1,i)
+                        unpacked(3*i-1) = packed(2,i)
+                        unpacked(3*i  ) = packed(3,i)
+                  enddo
+      end function unpack_coords
+
+            function pack_coords(unpacked) result(packed)
+                  implicit none
+                  real*8 :: unpacked(:)
+                  real*8 :: packed(3,int(size(unpacked)/3))
+                  integer :: i
+                  do i=1,int(size(unpacked)/3)
+                        packed(1,i) = unpacked(3*i-2)
+                        packed(2,i) = unpacked(3*i-1)
+                        packed(3,i) = unpacked(3*i  )
+                  enddo
+      end function pack_coords
+
+            function build_normal_base(Natoms,xyz,M) result (Base)
+                  implicit none
+                  integer :: Natoms
+                  real*8 :: xyz(3,Natoms),M(Natoms),Base(3*Natoms,3*Natoms)
+                  real*8 :: a(3*Natoms),b(3*Natoms),c(3*Natoms)
+                  integer :: i,j
+                  
+                  Base = 0.d0
+                  do i=1,Natoms
+                        !TX,TY,TZ
+                        Base(3*i-2,1) = sqrt(M(i))
+                        Base(3*i-1,2) = sqrt(M(i))
+                        Base(3*i  ,3) = sqrt(M(i))
+
+                        !RX
+                        Base(3*i-1,4) = -xyz(3,i)*sqrt(M(i))
+                        Base(3*i  ,4) =  xyz(2,i)*sqrt(M(i))
+                        !RY
+                        Base(3*i-2,5) = -xyz(3,i)*sqrt(M(i))
+                        Base(3*i  ,5) =  xyz(1,i)*sqrt(M(i))
+                        !RZ
+                        Base(3*i-2,6) = -xyz(2,i)*sqrt(M(i))
+                        Base(3*i-1,6) =  xyz(1,i)*sqrt(M(i))
+                  enddo
+
+                  do i=1,6
+                        Base(:,i) = Base(:,i)/get_norm(base(:,i))
+                  enddo
+
+                  
+                  do i=4,3*Natoms
+                        if(i<7) then
+                              a = Base(:,i)
+                        else
+                              a = 0.d0
+                              a(i) = 1.d0
+                              ! a = 1.d0
+                              ! a = a/get_norm(a)
+                        endif
+
+                        ! do j=1,i-1
+                        !       c = (sum(a*Base(:,j)))/sum(Base(:,j)**2)*Base(:,j)
+                        ! enddo
+                        ! b = a - c
+
+                        b = a
+                        do j=1,i-1
+                              c = (sum(b*Base(:,j)))/sum(Base(:,j)**2)*Base(:,j)
+                              b = b - c
+                        enddo
+                        
+
+                        b = b/get_norm(b)
+                        do j=1,i-1
+                              print*,sum(b*Base(:,j))
+                        enddo
+                        print*,""
+                        Base(:,i) = b
+                  enddo
+      end function build_normal_base
 
             subroutine save_zmat(port,N,Nangle,Ntorsion,S,dmat,bond_graph,angle_pairs,angle_vals,torsion_pairs,torsion_vals)
                   implicit none

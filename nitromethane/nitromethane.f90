@@ -3,19 +3,16 @@
       implicit none
 
       integer :: Natoms,Nbonds,Nangles,Ntorsions
-      character,allocatable :: S(:)*2
-      integer,allocatable :: Z(:)
-      real*8,allocatable :: M(:),dmat(:,:)
+      real*8,allocatable :: dmat(:,:)
       logical,allocatable :: bond_graph(:,:)
       integer,allocatable :: bond_pairs(:,:),angle_pairs(:,:),torsion_pairs(:,:)
       real*8,allocatable :: bond_vals(:),angle_vals(:),torsion_vals(:)
-      real*8,allocatable :: H(:,:),Hm(:,:),G(:,:)
+      real*8,allocatable :: H(:,:),Hm(:,:),Hmcopy(:,:),G(:,:)
       real*8,allocatable :: d(:),v(:,:)
       real*8 :: work(100)
-      real*8 :: mu,freq2
-      integer :: i,j,a,b,p,q,nrot
+      integer :: i,j,k,a,b,p,q,nrot
       
-      character :: input_filename*90,param_filename*90
+      character :: input_filename*90,param_filename*90,output_filename*90
 
       call get_command_argument(1,input_filename)
       call get_command_argument(2,param_filename)
@@ -30,14 +27,13 @@
       open(2,file=param_filename)
 
 
-      call get_xyz(1,Natoms,S,xyz)
-      allocate(Z(Natoms),M(Natoms))
-      call parse_atomic_symbol(Natoms,S,Z,M)
+      call get_xyz(1,Natoms)
+
 
       dmat =  get_dist_matrix(Natoms,xyz)
-      bond_graph = get_bond_graph(Natoms,Z,dmat)
+      bond_graph = get_bond_graph(Natoms,dmat)
 
-      call get_bonds(Natoms,Z,dmat,bond_pairs,bond_vals)
+      call get_bonds(Natoms,dmat,bond_pairs,bond_vals)
       Nbonds = size(bond_vals)
 
 
@@ -58,16 +54,20 @@
       !       print*,angle_pairs(i,:),angle_vals(i)
       ! enddo
       ! print*,""
-      print*,Ntorsions
-      do i=1,Ntorsions
-            print*,torsion_pairs(i,:),torsion_vals(i)
-      enddo
+      ! print*,Ntorsions
+      ! do i=1,Ntorsions
+      !       print*,torsion_pairs(i,:),torsion_vals(i)
+      ! enddo
       
 
       call get_param(2,Nbonds,Nangles,Ntorsions)
 
+      print*,Nimpropers
+      do i=1,Nimpropers
+            print*,improper_pairs(i,:),improper_vals(i)
+      enddo
       
-      allocate(H(3*Natoms,3*Natoms),Hm(3*Natoms,3*Natoms))
+      allocate(H(3*Natoms,3*Natoms),Hm(3*Natoms,3*Natoms),Hmcopy(3*Natoms,3*Natoms))
       H = build_hessian(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs)
       
@@ -112,7 +112,9 @@
       ! call jacobi(Hm,1,3*Natoms,d,v,nrot)
       ! call sort_ev(d,v,3*Natoms)
 
-      call dsyev("N","U",3*Natoms,Hm,3*Natoms,d,work,100,i)
+
+      Hmcopy = Hm
+      call dsyev("V","U",3*Natoms,Hm,3*Natoms,d,work,100,i)
 
       ! print*,"Jacobi finished, took",nrot,"rotations"
       print*,"Eigenvalues"
@@ -129,208 +131,32 @@
             print"(F20.12,2X,I4)",sqrt(d(i))*hbar_cm_dps,nint(sqrt(d(i))*hbar_cm_dps)
       enddo
 
-      print*,""
+      ! j = 8
+      ! print*,"Eigenvector",j
+      ! do i=1,Natoms
+      !       print"(2(F20.15,2X))",Hm(3*i-2,j)
+      !       print"(2(F20.15,2X))",Hm(3*i-1,j),sqrt(M(i))
+      !       print"(2(F20.15,2X))",Hm(3*i,j)
+      !       print*,""
+      ! enddo
 
-      end
+      ! print*,sum(matmul(Hmcopy,Hm(:,1))/Hm(:,1))/(3.d0*Natoms)
 
-            subroutine jacobi(a,n,np,d,v,nrot)
-!     Finds the eigenvalues and eigenvectors of the symmetric matrix a using the Jacobi diagonalization method.
-!           Input
-!           -----
-!                 a : real*8,dimension(n,n)
-!                       Matrix to diagonalize, the upper triangle will be set to 0 during the diagonalization process but the
-!                       original diagonal and lower triangle will not be changed.
-!                 n : integer
-!                       Box parameter, if 1 all elements are eliminated, if different than 1 then the the elements of
-!                       of the first np-n box are not eliminated.                              
-!                 np : integer
-!                       Dimension of the matrix to diagonalize.
-!           Output
-!           ------
-!                 d : real*8,dimension(n)
-!                       Array with the (not sorted) eigenvalues of the input matrix.
-!                 v : real*8,dimension(n,n)
-!                       Array with the eignevectors (not normalized) arranged by columns 
-!                       with the same ordering as the eigenvalue array.
-!                 nrot : integer
-!                       Number of Jacobi rotations used to diagonalize the matrix.
-            implicit none
-            integer :: n,np
-            real*8 :: a(np,np),d(np),v(np,np)
-            integer :: nrot
-            real*8 :: maxelement,theta,t,c,s,tau,sum
-            real*8 :: ap,aq,vp,vq,diff
-            integer,parameter :: maxiter = 1e6
-            real*8,parameter :: eps = 1.d-12
-            integer :: i,j,maxi,maxj,p,q
 
-            d = 0.d0 !Initialize d to all zeros
-            
-            !Initialize v to identity
-            do i=1,np
-                  do j=1,np
-                        if(i.eq.j) then
-                              v(i,j) = 1.d0
-                        else
-                              v(i,j) = 0.d0
-                        endif
-                  enddo
-            enddo
-
-            !Convergence checks
-            sum = 0.d0
-            maxelement = 0.d0
-
-            !Find greatest element in the upper triangle, element a(p,q)
-            !Because it is the upper triangle q => p always
-            if(n == 1) then
-                  do i=1,np
-                        do j=i+1,np
-                              sum = sum + a(i,j)**2
-                              if(maxelement < abs(a(i,j))) then
-                                    maxelement = abs(a(i,j))
-                                    maxi = i
-                                    maxj = j
-                              endif
-                        enddo
-                  enddo
-            else
-                  do i=1,np-n
-                        do j=n+1,np
-                              sum = sum + a(i,j)**2
-                              if(maxelement < abs(a(i,j))) then
-                                    maxelement = abs(a(i,j))
-                                    maxi = i
-                                    maxj = j
-                              endif
-                        enddo
-                  enddo
+      close(1)
+      do k=7,3*Natoms
+            print*,"Testing normal mode",k
+            if(k<10) then
+                  write(output_filename,"(A,I1,A)")"normal_oscillations/normalmode_",k,".xyz"
+            elseif(k<100) then
+                  write(output_filename,"(A,I2,A)")"normal_oscillations/normalmode_",k,".xyz"
             endif
-            p = maxi
-            q = maxj
+            open(1,file=output_filename)
 
-            nrot = 0
-            do while(sum > eps .and. maxelement > eps) !Main loop
-                  !Compute all the relevant quantities
-                  diff = a(q,q) - a(p,p)
-                  !Machine epsilon check for theta, within 100 times(because the square)
-                  if(abs(diff)+100.d0*a(p,q) .eq. abs(diff)) then
-                        t = a(p,q)/diff
-                  else
-                        theta = (a(q,q) - a(p,p))/(2.d0*a(p,q))
-                        t = sign(1.d0,theta)*(1.d0/(abs(theta) + sqrt(theta**2 + 1.d0)))
-                  endif
-                  c = 1.d0/sqrt((1.d0 + t**2))
-                  s = t*c
-                  tau = s/(1.d0 + c)
+            call test_normal_mode(Natoms,xyz,Hm,k,sqrt(d(k)),1)
+            close(1)
+      enddo
+      
 
-                  !Update app aqq and apq
-                  a(q,q) = a(q,q) + t*a(p,q)
-                  a(p,p) = a(p,p) - t*a(p,q)
-                  a(p,q) = 0.d0
 
-                  do i=1,np !Loop over all rows/columns
-                        if(i<p) then !For all elements below the row/column p
-                              !Store old elements of the column p and q
-                              ap = a(i,p) 
-                              aq = a(i,q)
-                              !Modify all elements of the column p and q
-                              a(i,p) = ap - s*(aq + ap*tau) 
-                              a(i,q) = aq + s*(ap - aq*tau)
-                        elseif(p<i .and. i<q) then !For all elements above p but below q (remember q => p always)
-                              !Store old elements for the row p and column q
-                              ap = a(p,i)
-                              aq = a(i,q)
-                              !Modify all elements of row p and column q
-                              a(p,i) = ap - s*(aq + ap*tau)
-                              a(i,q) = aq + s*(ap - aq*tau)
-                        elseif(i>q) then !For the remaining elements (above q)
-                              !Store old rows p and q
-                              ap = a(p,i)
-                              aq = a(q,i)
-                              !Modify row p and q
-                              a(p,i) = ap - s*(aq + ap*tau)
-                              a(q,i) = aq + s*(ap - aq*tau)
-                        endif
-                        !Note that in the previous loop we have not modified elements pp,qq or pq, which are already modified
-
-                        !Update eigenvector matrix
-                        vp = v(i,p)
-                        vq = v(i,q)
-                        v(i,p) = vp - s*(vq + vp*tau)
-                        v(i,q) = vq + s*(vp - vq*tau)
-                        !Add eigenvalue to d
-                        d(i) = a(i,i)
-                  enddo
-                  
-                  
-                  sum = 0.d0
-                  maxelement = 0.d0
-                  !Refind greatest value and convergence
-                  if(n == 1) then
-                        do i=1,np
-                              do j=i+1,np
-                                    sum = sum + a(i,j)**2
-                                    if(maxelement < abs(a(i,j))) then
-                                          maxelement = abs(a(i,j))
-                                          maxi = i
-                                          maxj = j
-                                    endif
-                              enddo
-                        enddo
-                  else
-                        do i=1,np-n
-                              do j=n+1,np
-                                    sum = sum + a(i,j)**2
-                                    if(maxelement < abs(a(i,j))) then
-                                          maxelement = abs(a(i,j))
-                                          maxi = i
-                                          maxj = j
-                                    endif
-                              enddo
-                        enddo
-                  endif
-                  
-                  p = maxi
-                  q = maxj
-                  nrot = nrot + 1
-                  if(nrot>maxiter) then
-                        write(*,*)"Jacobi: maximum iterations exceeded"
-                        exit
-                  endif
-            enddo
-      end
-
-            
-      subroutine sort_ev(d,v,n)
-            implicit none
-            integer :: n
-            real*8 :: d(n),v(n,n)
-            real*8 :: dcheck
-            real*8 :: vcheck(n)
-            integer :: i,j,k
-            k = 1
-            do i=1,n-1
-                  k = i
-                  dcheck = d(i)
-                  vcheck = v(:,i)
-                  do j=i+1,n
-                        if(d(j) < dcheck) then
-                              k = j
-                              dcheck = d(j)
-                              vcheck = v(:,j)
-                        endif
-                  enddo
-
-                  if(k /= i) then
-                        d(k) = d(i)
-                        d(i) = dcheck
-                        v(:,k) = v(:,i)
-                        v(:,i) = vcheck
-
-                        ! vcheck = v(:,i)
-                        ! v(:,i) = v(:,k)
-                        ! v(:,k) = vcheck
-                  endif
-            enddo
       end
