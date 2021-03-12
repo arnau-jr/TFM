@@ -2,7 +2,9 @@
             implicit none
             real*8,parameter :: pi=4.*atan(1.) 
             real*8,parameter :: cov(10) = (/0.37,0.,0.,0.,0.,0.77,0.75,0.73,0.,0./)
-            real*8,parameter :: mass(10) = (/1.008,0.,0.,0.,0.,12.01,14.01,16.00,0.,0./)
+            ! real*8,parameter :: mass(10) = (/1.008,0.,0.,0.,0.,12.01,14.01,16.00,0.,0./)
+            real*8,parameter :: mass(10) = (/1.00782522,0.,0.,0.,0.,12.01,14.01,15.99491502,0.,0./)
+
 
             character,allocatable :: S(:)*2
             integer,allocatable :: Z(:)
@@ -470,6 +472,138 @@
                         packed(3,i) = unpacked(3*i  )
                   enddo
       end function pack_coords
+
+            subroutine get_cm_coords(Natoms,xyz,cm_pos,xyz_cm)
+                  implicit none
+                  integer,intent(in)  :: Natoms
+                  real*8 ,intent(in)  :: xyz(3,Natoms)
+                  real*8 ,intent(out) :: cm_pos(3),xyz_cm(3,Natoms)
+                  real*8              :: total_mass
+                  integer             :: i,j
+                  total_mass = 0.d0
+                  cm_pos = 0.d0
+                  xyz_cm = 0.d0
+                  do i=1,Natoms
+                        total_mass = total_mass + M(i)
+                        cm_pos(:) = cm_pos(:) + M(i)*xyz(:,i)
+                  end do
+                  cm_pos = cm_pos/total_mass
+                  do i=1,Natoms
+                        xyz_cm(:,i) = xyz(:,i) - cm_pos(:)
+                  end do
+      end subroutine get_cm_coords
+
+            function cart_to_normal(Natoms,xyz,Base) result(xyz_nm)
+                  implicit none
+                  integer :: Natoms
+                  real*8  :: xyz(3,Natoms),Base(3*Natoms,3*Natoms),xyz_nm(3*Natoms)
+                  real*8  :: xyz_mw(3,Natoms),xyz_mw_unpacked(3*Natoms)
+
+                  xyz_mw(1,:) = xyz(1,:)*sqrt(M)
+                  xyz_mw(2,:) = xyz(2,:)*sqrt(M)
+                  xyz_mw(3,:) = xyz(3,:)*sqrt(M)
+
+                  xyz_mw_unpacked = unpack_coords(xyz_mw)
+
+                  xyz_nm = matmul(transpose(Base),xyz_mw_unpacked)
+      end function cart_to_normal
+
+
+            function build_eckart_matrix(Natoms,xyz_eq,xyz_cm) result(EM)
+                  implicit none
+                  integer :: Natoms
+                  real*8  :: xyz_eq(3,Natoms),xyz_cm(3,Natoms)
+                  real*8  :: xpa,xma,ypa,yma,zpa,zma
+                  real*8  :: EM(4,4)
+                  integer :: a
+                  EM = 0.d0
+                  do a=1,Natoms
+                        xpa = xyz_eq(1,a) + xyz_cm(1,a)
+                        xma = xyz_eq(1,a) - xyz_cm(1,a)
+
+                        ypa = xyz_eq(2,a) + xyz_cm(2,a)
+                        yma = xyz_eq(2,a) - xyz_cm(2,a)
+
+                        zpa = xyz_eq(3,a) + xyz_cm(3,a)
+                        zma = xyz_eq(3,a) - xyz_cm(3,a)
+
+                        !Diagonal
+                        EM(1,1) = EM(1,1) + M(a)*(xpa**2 + yma**2 + zma**2)
+                        EM(2,2) = EM(2,2) + M(a)*(xma**2 + ypa**2 + zpa**2)
+                        EM(3,3) = EM(3,3) + M(a)*(xpa**2 + yma**2 + zpa**2)
+                        EM(4,4) = EM(4,4) + M(a)*(xpa**2 + ypa**2 + zma**2)
+
+                        !Rest of 1st row
+                        EM(1,2) = EM(1,2) + M(a)*(ypa*zma - yma*zpa)
+                        EM(1,3) = EM(1,3) + M(a)*(xma*zpa - xpa*zma)
+                        EM(1,4) = EM(1,4) + M(a)*(xpa*yma - xma*ypa)
+
+                        !Rest of 2nd row
+                        EM(2,3) = EM(2,3) + M(a)*(xma*yma - xpa*ypa)
+                        EM(2,4) = EM(2,4) + M(a)*(xma*zma - xpa*zpa)
+
+                        !Rest of 3rd row
+                        EM(3,4) = EM(3,4) + M(a)*(yma*zma - ypa*zpa)
+                  end do
+
+                  !Symmetrize
+                  EM(2,1) = EM(1,2)
+                  EM(3,1) = EM(1,3)
+                  EM(4,1) = EM(1,4)
+
+                  EM(3,2) = EM(2,3)
+                  EM(4,2) = EM(2,4)
+
+                  EM(4,3) = EM(3,4)
+      end function build_eckart_matrix
+
+            function build_direction_cosine_matrix(V) result (U)
+                  implicit none
+                  real*8 :: V(4)
+                  real*8 :: U(3,3)
+                  real*8 :: q0,q1,q2,q3
+                  q0 = V(1)
+                  q1 = V(2)
+                  q2 = V(3)
+                  q3 = V(4)
+
+                  !1st row
+                  U(1,1) = q0**2 + q1**2 - q2**2 - q3**2
+                  U(1,2) = 2.d0*(q1*q2 + q0*q3)
+                  U(1,3) = 2.d0*(q1*q3 - q0*q2)
+                  
+                  !2nd row
+                  U(2,1) = 2.d0*(q1*q2 - q0*q3)
+                  U(2,2) = q0**2 - q1**2 + q2**2 - q3**2
+                  U(2,3) = 2.d0*(q2*q3 + q0*q1)
+
+                  !3rd row
+                  U(3,1) = 2.d0*(q1*q3 + q0*q2)
+                  U(3,2) = 2.d0*(q2*q3 - q0*q1)
+                  U(3,3) = q0**2 - q1**2 - q2**2 + q3**2
+      end function build_direction_cosine_matrix
+
+            subroutine get_eckart_state(Natoms,xyz,xyz_eq,xyz_cm,xyz_eckart)
+                  implicit none
+                  integer,intent(in) :: Natoms
+                  real*8,intent(in)  :: xyz(3,Natoms),xyz_eq(3,Natoms)
+                  real*8,intent(out) :: xyz_cm(3,Natoms),xyz_eckart(3,Natoms)
+                  real*8             :: cm_pos(3),EM(4,4),U(3,3)
+                  real*8             :: work(100),d(4)
+                  integer            :: i,ierror
+
+                  call get_cm_coords(Natoms,xyz,cm_pos,xyz_cm)
+
+                  EM = build_eckart_matrix(Natoms,xyz_eq,xyz_cm)
+
+                  call dsyev("V","U",4,EM,4,d,work,100,ierror)
+
+                  U = build_direction_cosine_matrix(EM(:,1))
+
+                  do i=1,Natoms
+                        xyz_eckart(:,i) = matmul(U,xyz_cm(:,i))
+                  end do
+      end subroutine get_eckart_state
 
             function build_normal_base(Natoms,xyz,M) result (Base)
                   implicit none

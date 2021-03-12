@@ -39,22 +39,25 @@
                   endif
       end function comp_kinetic_energy
 
-            function comp_normal_energy(Natoms,vel,Base) result(NM_energies)
+            function comp_normal_energy(Natoms,xyz_cm,xyz_eckart,vel,Base,freqs) result(NM_energies)
                   implicit none
                   integer :: Natoms
-                  real*8 :: Base(3*Natoms,3*Natoms),NM_energies(3*Natoms)
-                  real*8 :: vel(3,Natoms),mw_vel(3,Natoms),mw_vel_unpacked(3*Natoms)
-                  real*8 :: nm_vel_unpacked(3*Natoms)
+                  real*8  :: xyz_cm(3,Natoms),xyz_eckart(3,Natoms)
+                  real*8  :: Base(3*Natoms,3*Natoms),freqs(3*Natoms),NM_energies(3*Natoms)
+                  real*8  :: vel(3,Natoms),vel_nm(3*Natoms)
+                  real*8  :: xyz_cm_nm(3*Natoms),xyz_eckart_nm(3*Natoms) 
+                  integer :: i
                   
-                  mw_vel(1,:) = vel(1,:)*sqrt(M)
-                  mw_vel(2,:) = vel(2,:)*sqrt(M)
-                  mw_vel(3,:) = vel(3,:)*sqrt(M)
+                  !Kinetic part
+                  vel_nm = cart_to_normal(Natoms,vel,Base)
 
-                  mw_vel_unpacked = unpack_coords(mw_vel)
+                  NM_energies = 0.5d0*vel_nm**2
 
-                  nm_vel_unpacked = matmul(transpose(Base),mw_vel_unpacked)
+                  !Potential part
+                  xyz_cm_nm = cart_to_normal(Natoms,xyz_cm,Base)
+                  xyz_eckart_nm = cart_to_normal(Natoms,xyz_eckart,Base)
 
-                  NM_energies = 0.5d0*nm_vel_unpacked**2
+                  NM_energies = NM_energies + 0.5d0*freqs*(xyz_cm_nm-xyz_eckart_nm)**2
       end function comp_normal_energy
 
       end module md_utils

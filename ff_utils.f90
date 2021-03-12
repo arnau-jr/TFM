@@ -177,6 +177,7 @@
                   enddo
       end subroutine test_normal_mode
 
+
             function build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
             bond_pairs,angle_pairs,torsion_pairs) result(G)
                   implicit none

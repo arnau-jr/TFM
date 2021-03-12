@@ -11,6 +11,9 @@
       real*8,allocatable :: d(:),v(:,:)
       real*8 :: work(100)
       integer :: i,j,k,a,b,p,q,nrot
+
+      real*8 :: cm_pos(3)
+      real*8,allocatable :: xyz_cm(:,:),xyz_eq(:,:)
       
       character :: input_filename*90,param_filename*90,output_filename*90
 
@@ -144,19 +147,18 @@
 
 
       close(1)
-      do k=7,3*Natoms
-            print*,"Testing normal mode",k
-            if(k<10) then
-                  write(output_filename,"(A,I1,A)")"normal_oscillations/normalmode_",k,".xyz"
-            elseif(k<100) then
-                  write(output_filename,"(A,I2,A)")"normal_oscillations/normalmode_",k,".xyz"
-            endif
-            open(1,file=output_filename)
+      ! do k=7,3*Natoms
+      !       print*,"Testing normal mode",k
+      !       if(k<10) then
+      !             write(output_filename,"(A,I1,A)")"normal_oscillations/normalmode_",k,".xyz"
+      !       elseif(k<100) then
+      !             write(output_filename,"(A,I2,A)")"normal_oscillations/normalmode_",k,".xyz"
+      !       endif
+      !       open(1,file=output_filename)
 
-            call test_normal_mode(Natoms,xyz,Hm,k,sqrt(d(k)),1)
-            close(1)
-      enddo
+      !       call test_normal_mode(Natoms,xyz,Hm,k,sqrt(d(k)),1)
+      !       close(1)
+      ! enddo
       
-
 
       end

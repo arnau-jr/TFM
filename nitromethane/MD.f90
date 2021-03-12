@@ -19,6 +19,9 @@
       real*8,parameter :: dt=1d-3 !0.1 fs
       integer,parameter :: Nt = 10000 !With 0.1 fs dt it should be 1 ps
 
+      real*8 :: cm_pos(3)
+      real*8,allocatable :: xyz_cm(:,:),xyz_eq(:,:),xyz_eckart(:,:)
+
       integer :: i,j,a,b,p,q
 
       character :: input_filename*90,param_filename*90
@@ -118,6 +121,7 @@
       open(3,file="results/trajectory.xyz")
       open(4,file="results/thermodynamics.dat")
       open(5,file="results/nm_ener.dat")
+      open(10,file="results/eckart_states.xyz")
       write(format_label,"(A,I2,A)")"(I5,2X,",3*Natoms,"(E14.7,2X))"
 
 
@@ -125,6 +129,8 @@
       v = init_normalmodes_micro(Natoms,Hm,T)
 
       allocate(G(3,Natoms),NM_energies(3*Natoms))
+      allocate(xyz_cm(3,Natoms),xyz_eq(3,Natoms),xyz_eckart(3,Natoms))
+
       G = -build_gradient(Natoms,xyz,Nbonds,Nangles,Ntorsions,&
       bond_pairs,angle_pairs,torsion_pairs)
 
@@ -135,9 +141,15 @@
 
       call write_conf(3,Natoms,xyz,3)
 
-      write(4,"(I5,2X,3(E14.7,2X))")0,K,E,K+E
+      write(4,"(I5,2X,4(E14.7,2X))")0,K,E,K+E,sum(NM_energies)
 
-      NM_energies = comp_normal_energy(Natoms,v,Hm)
+
+      call get_cm_coords(Natoms,xyz,cm_pos,xyz_eq)
+
+      call get_eckart_state(Natoms,xyz,xyz_eq,xyz_cm,xyz_eckart)
+      call write_conf(3,Natoms,xyz_eckart,10)
+
+      NM_energies = comp_normal_energy(Natoms,xyz_cm,xyz_eckart,v,Hm,d)
       write(5,format_label)0,NM_energies
 
       do i=1,Nt
@@ -153,11 +165,14 @@
             angle_vals,torsion_vals)
 
             K = comp_kinetic_energy(v,0)
-            NM_energies = comp_normal_energy(Natoms,v,Hm)
+            NM_energies = comp_normal_energy(Natoms,xyz_cm,xyz_eckart,v,Hm,d)
 
             call write_conf(3,Natoms,xyz,3)
 
-            write(4,"(I5,2X,3(E14.7,2X))")i,K,E,K+E
+            call get_eckart_state(Natoms,xyz,xyz_eq,xyz_cm,xyz_eckart)
+            call write_conf(3,Natoms,xyz_eckart,10)
+
+            write(4,"(I5,2X,4(E14.7,2X))")i,K,E,K+E,sum(NM_energies)
             write(5,format_label)i,NM_energies
       enddo
 
